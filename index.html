@@ -1,0 +1,2923 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Boxing PEKUN</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%B1%3C/text%3E%3C/svg%3E">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f3efe7;--fg:#1c1814;--card:#fffdf8;--muted:#6f655a;--accent:#b8321f;--line:#d9d0c1}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141210;--fg:#f2ece2;--card:#1f1c19;--muted:#998f82;--accent:#e0503a;--line:#3a342e}}
+:root[data-theme="dark"]{--bg:#141210;--fg:#f2ece2;--card:#1f1c19;--muted:#998f82;--accent:#e0503a;--line:#3a342e}
+*{margin:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,sans-serif;min-height:100vh}
+#app{max-width:480px;margin:0 auto;padding:16px}
+h1{font-size:28px;text-align:center;margin:8px 0 4px;font-weight:900;letter-spacing:-.5px}
+.sub{text-align:center;color:var(--muted);font-size:14px;margin:6px 0 12px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modes4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:4px}
+.modes4 .btn{padding:10px 4px;font-size:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+.card{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:12px;text-align:center;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;transition:border-color .15s}
+.card.wide{grid-column:span 2}
+.card.taken{opacity:.35;pointer-events:none}
+.card:hover,.card:focus-visible{border-color:var(--accent);outline:none}
+.face{font-size:38px;line-height:1.1;margin-bottom:4px}
+.name{font-weight:800;font-size:16px}
+.title{font-size:12px;color:var(--accent);font-weight:800;letter-spacing:.3px;margin-top:2px}
+.stats{font-size:12px;color:var(--muted);margin-top:6px}
+.desc{font-size:13px;margin-top:4px;font-style:italic}
+.hud{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+.fbar{flex:1;min-width:0}
+.fbar .label{font-size:13px;display:flex;justify-content:space-between;gap:6px;white-space:nowrap}
+.fbar .label span:first-child{overflow:hidden;text-overflow:ellipsis}
+.bar{height:12px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:4px}
+.bar>div{height:100%;transition:width .25s}
+.center{text-align:center;min-width:84px}
+.round{font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
+.pts{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+canvas{width:100%;height:auto;display:block;border-radius:16px}
+.ctrl{margin-top:10px}
+.lbl{font-size:12px;color:var(--muted);text-align:center;margin-bottom:2px}
+.actions{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.btn{width:100%;padding:13px 6px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:0;touch-action:manipulation;-webkit-user-select:none;user-select:none;transition:transform .05s,filter .05s}
+.btn.pressed{transform:scale(.93);filter:brightness(1.2)}
+.btn.alt{background:var(--card);color:var(--fg);border:2px solid var(--line)}
+.stick{position:relative;width:112px;height:112px;margin:10px auto 0;border-radius:50%;background:var(--card);border:2px solid var(--line);touch-action:none;user-select:none}
+.stick:before{content:"";position:absolute;left:50%;top:50%;width:2px;height:60%;background:var(--line);transform:translate(-50%,-50%)}
+.stick:after{content:"";position:absolute;left:50%;top:50%;width:60%;height:2px;background:var(--line);transform:translate(-50%,-50%)}
+.knob{position:absolute;top:50%;left:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:var(--accent);box-shadow:0 4px 10px rgba(0,0,0,.3);pointer-events:none}
+.keys{font-size:12px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5}
+#log{font-size:14px;color:var(--muted);text-align:center;min-height:22px;margin-top:8px}
+.hidden{display:none!important}
+#quit{margin-top:12px}
+#menu .btn,#fight .btn{margin-top:0}
+#over{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:20px}
+#over .box{background:var(--card);border-radius:16px;padding:24px;max-width:320px;width:100%;text-align:center}
+#over h2{font-size:24px;margin-bottom:6px}
+#over p{color:var(--muted);font-size:14px;margin-bottom:12px}
+
+/* Layout landscape (semua mode bertanding) */
+#fight.landscape{position:fixed;top:0;left:0;width:100vw;height:100vh;display:grid;grid-template-columns:190px 1fr 190px;grid-template-rows:auto 1fr auto auto auto;gap:6px 10px;padding:8px 10px;background:var(--bg);overflow:hidden;z-index:5}
+#fight.landscape.rotated{width:100vh;height:100vw;transform-origin:0 0;transform:translateX(100vw) rotate(90deg)}
+#fight.landscape .hud{grid-column:2;grid-row:1;margin:0}
+#fight.landscape canvas{grid-column:2;grid-row:2;width:100%;height:100%;min-height:0;object-fit:contain;border-radius:12px}
+#fight.landscape #keys{grid-column:2;grid-row:3;margin:0;font-size:11px}
+#fight.landscape #log{grid-column:2;grid-row:4;margin:0;min-height:0;font-size:13px}
+#fight.landscape #quit{grid-column:2;grid-row:5;margin:0;padding:8px}
+#fight.landscape .ctrl{margin:0;grid-row:1/-1}
+#fight.landscape .lbl{display:none}
+#fight.landscape .actions{grid-template-columns:1fr 1fr;gap:8px}
+#fight.landscape .btn{padding:12px 6px;font-size:15px}
+#fight.landscape .stick{margin:0 auto;width:120px;height:120px}
+/* 1 pemain vs bot: analog di kiri, tombol di kanan */
+#fight.landscape:not(.duo) #ctrlP{display:contents}
+#fight.landscape:not(.duo) #ctrlP .stick{grid-column:1;grid-row:1/-1;align-self:center;justify-self:center}
+#fight.landscape:not(.duo) #ctrlP .actions{grid-column:3;grid-row:1/-1;align-self:center}
+/* 2 pemain: tiap pemain punya analog dan tombol di sisinya */
+#fight.landscape.duo #ctrlP{grid-column:1;display:flex;flex-direction:column;justify-content:center;gap:10px}
+#fight.landscape.duo #ctrlO{grid-column:3;display:flex;flex-direction:column;justify-content:center;gap:10px}
+#fight.landscape.duo .stick{margin:0 auto}
+#over{z-index:10}
+/* Stage tetap 960x440 yang diskalakan agar pas di layar, tidak ada yang terpotong */
+#fight.stage{position:fixed;left:50%;top:50%;width:960px;height:440px;display:grid;grid-template-columns:200px 1fr 200px;grid-template-rows:64px 1fr 56px;gap:8px 12px;padding:8px 12px;background:var(--bg);border-radius:18px;transform:translate(-50%,-50%) var(--rot,rotate(0deg)) scale(var(--s,1));transform-origin:50% 50%;z-index:5;overflow:hidden}
+#fight.stage .hud{grid-column:1/-1;grid-row:1;margin:0}
+#fight.stage canvas{grid-column:2;grid-row:2;width:100%;height:100%;min-height:0;object-fit:contain;border-radius:12px}
+#fight.stage #keys{display:none}
+#fight.stage #log{grid-column:2;grid-row:3;margin:0;font-size:14px;min-height:0;align-self:center}
+#fight.stage #quit{grid-column:3;grid-row:3;margin:0;padding:12px}
+#fight.stage .lbl{display:none}
+#fight.stage .ctrl{margin:0;grid-row:2;display:flex;flex-direction:column;justify-content:center;gap:10px}
+#fight.stage #ctrlP{grid-column:1}
+#fight.stage #ctrlO{grid-column:3}
+#fight.stage .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#fight.stage .btn{padding:14px 6px;font-size:16px;margin:0}
+#fight.stage .stick{margin:0 auto;width:130px;height:130px}
+#fight.stage .knob{width:56px;height:56px;margin:-28px 0 0 -28px}
+/* 1 pemain vs bot: analog di kiri, tombol di kanan */
+#fight.stage:not(.duo) #ctrlP{display:contents}
+#fight.stage:not(.duo) #ctrlP .stick{grid-column:1;grid-row:2;align-self:center;justify-self:center;width:170px;height:170px}
+#fight.stage:not(.duo) #ctrlP .stick .knob{width:64px;height:64px;margin:-32px 0 0 -32px}
+#fight.stage:not(.duo) #ctrlP .actions{grid-column:3;grid-row:2;align-self:center}
+#fight.stage:not(.duo) #ctrlP .btn{padding:20px 6px;font-size:17px}
+#fight.stage:not(.duo) #ctrlP .actions{gap:10px}
+.btn.wpn{grid-column:1/-1}
+#arena{grid-column:2;grid-row:2;position:relative;min-height:0;border-radius:12px;overflow:hidden}
+#arena canvas{position:absolute;left:0;top:0;width:100%;height:100%;border-radius:12px}
+.board-title{font-size:10px;letter-spacing:1px;color:var(--muted)}
+.board-main{font-size:12px;font-weight:700;white-space:nowrap}
+.board-dots{font-size:13px;letter-spacing:2px;white-space:nowrap}
+/* Arena dilebarkan: kolom kontrol lebih sempit, baris atas/bawah lebih tipis (rasio tetap pas) */
+#fight.stage{grid-template-columns:160px 1fr 160px;grid-template-rows:48px 1fr 40px;gap:6px 10px;padding:6px 10px}
+#fight.stage .btn{padding:10px 4px;font-size:14px}
+#fight.stage #quit{padding:8px}
+#fight.stage .stick{width:112px;height:112px}
+#fight.stage .knob{width:48px;height:48px;margin:-24px 0 0 -24px}
+#fight.stage:not(.duo) #ctrlP .stick{width:140px;height:140px}
+#fight.stage:not(.duo) #ctrlP .stick .knob{width:56px;height:56px;margin:-28px 0 0 -28px}
+#fight.stage:not(.duo) #ctrlP .btn{padding:16px 4px;font-size:15px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="menu">
+    <h1>🐱 Boxing PEKUN</h1>
+    <p class="sub">Wasit: gaMcuk · 5 match per pertandingan</p>
+    <div class="modes">
+      <button class="btn" data-mode="1">1 Pemain (vs bot)</button>
+      <button class="btn alt" data-mode="2">2 Pemain (satu layar)</button>
+    </div>
+    <button class="btn alt" id="btnOnline" style="margin-top:8px">🌐 Main Online (kode room)</button>
+    <div id="netBox" class="hidden" style="margin-top:8px;text-align:center">
+      <div id="netHome">
+        <button class="btn" id="netHost">Buat room baru</button>
+        <p class="sub">atau gabung ke room temanmu</p>
+        <div style="display:flex;gap:8px">
+          <input id="netCode" maxlength="5" placeholder="KODE" autocomplete="off" autocapitalize="characters" style="flex:1;min-width:0;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--fg);font-size:18px;text-transform:uppercase;letter-spacing:4px;text-align:center">
+          <button class="btn" id="netJoin" style="width:auto;padding:0 20px">Gabung</button>
+        </div>
+      </div>
+      <div id="netWait" class="hidden">
+        <p class="sub">Kode room kamu</p>
+        <div id="netCodeShow" style="font-size:44px;font-weight:900;letter-spacing:8px;margin:4px 0 8px"></div>
+        <button class="btn alt" id="netCopy">Salin kode</button>
+      </div>
+      <p class="sub" id="netMsg"></p>
+      <button class="btn alt" id="netCancel">Batal / keluar room</button>
+    </div>
+    <div id="lvlRow"><p class="sub">Level bot</p><div class="modes4" id="levels"></div></div>
+    <p class="sub" id="pick"></p>
+    <p class="sub">Nama TAR (boleh kosong)</p>
+    <input id="brunoName" maxlength="12" style="width:100%;padding:12px;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--fg);font-size:16px;margin-bottom:8px">
+    <div class="grid" id="roster"></div>
+  </div>
+
+  <div id="fight" class="hidden">
+    <div class="hud">
+      <div class="fbar">
+        <div class="label"><span id="pn"></span><span id="ph"></span></div>
+        <div class="bar"><div id="pb"></div></div>
+      </div>
+      <div class="center">
+        <div class="round" id="rd"></div>
+        <div class="pts" id="pts"></div>
+        <div id="board"></div>
+      </div>
+      <div class="fbar">
+        <div class="label"><span id="on"></span><span id="oh"></span></div>
+        <div class="bar"><div id="ob"></div></div>
+      </div>
+    </div>
+    <div id="arena"><canvas id="gl"></canvas><canvas id="ring" width="480" height="260"></canvas></div>
+
+    <div class="ctrl" id="ctrlP">
+      <div class="lbl" id="lp"></div>
+      <div class="actions">
+        <button class="btn" data-p="P" data-a="jab">Jab</button>
+        <button class="btn" data-p="P" data-a="hook">Hit</button>
+        <button class="btn alt" data-p="P" data-a="block">Tangkis</button>
+        <button class="btn alt" data-p="P" data-a="dodge">Hindar</button>
+        <button class="btn alt" data-p="P" data-a="jump">Loncat</button>
+        <button class="btn" data-p="P" data-a="ult">Ultimate</button>
+        <button class="btn alt wpn" data-p="P" data-a="weapon">Senjata</button>
+      </div>
+      <div class="stick" data-p="P"><div class="knob"></div></div>
+    </div>
+
+    <div class="ctrl hidden" id="ctrlO">
+      <div class="lbl" id="lo"></div>
+      <div class="actions">
+        <button class="btn" data-p="O" data-a="jab">Jab</button>
+        <button class="btn" data-p="O" data-a="hook">Hit</button>
+        <button class="btn alt" data-p="O" data-a="block">Tangkis</button>
+        <button class="btn alt" data-p="O" data-a="dodge">Hindar</button>
+        <button class="btn alt" data-p="O" data-a="jump">Loncat</button>
+        <button class="btn" data-p="O" data-a="ult">Ultimate</button>
+        <button class="btn alt wpn" data-p="O" data-a="weapon">Senjata</button>
+      </div>
+      <div class="stick" data-p="O"><div class="knob"></div></div>
+    </div>
+
+    <div class="keys" id="keys"></div>
+    <div id="log"></div>
+    <button class="btn alt" id="quit">Keluar</button>
+  </div>
+</div>
+
+<div id="over" class="hidden">
+  <div class="box">
+    <h2 id="ot"></h2>
+    <p id="os"></p>
+    <button class="btn" id="next">Match berikutnya</button>
+    <button class="btn alt" id="again">Kembali ke menu</button>
+  </div>
+</div>
+
+<script>
+const F = [
+  {name:"TAR", title:"SI BANTENG", face:"🐵", badge:"", color:"#b8321f", hood:false, hair:"gimbal", hairColor:"#6b4a2b", hp:95, power:1.0, speed:1.2, desc:"Pukulan berat, gerak lambat"},
+  {name:"NUNA", title:"SI JOMBLO AKUT", face:"😭", badge:"", color:"#2e9e4f", hood:true, hood2:"#f5f1e6", hair:"braid", hairColor:"#f4c430", hair2:"#e0a800", hp:95, power:1.0, speed:1.2, desc:"bosen jomblo, butuh pukpuk, kangen sleepcall"},
+  {name:"MICU", title:"SI GADIS KITA", face:"😡", badge:"", color:"#7a4a2a", hood:true, hood2:"#e7a3b5", hair:"braid", hairColor:"#2f7fd1", hair2:"#1f5fa8", hp:95, power:1.0, speed:1.2, desc:"mau kentang goreng, mau Koko baru, korban Koko"},
+  {name:"GEHENA", title:"SI GACOR", face:"😂", badge:"", color:"#1a1a1a", hood:false, hp:95, power:1.0, speed:1.2, hair:"kribo", hairColor:"#2fbf4a", desc:"butuh lawan, bucin disebelah, orang stres"},
+  {name:"SAPIER", title:"PAWANG JAI", face:"😬", badge:"", color:"#6a3fb5", hood:false, hair:"kribosebelah", hairColor:"#2b1d14", hp:95, power:1.0, speed:1.2, desc:"counter Jai, serba Jai, Jai Prabowo"},
+  {name:"Vee", title:"HYAAA KALI", face:"🥰", badge:"", color:"#e0508f", hood:false, hp:95, power:1.0, speed:1.2, tall:1.18, hair:"lurus", hairColor:"#1f1722", desc:""},
+  {name:"AMOR", title:"DUTA TRIAL", face:"😗", badge:"", color:"#2a7048", hood:false, hp:95, power:1.0, speed:1.2, hair:"botak", hairColor:"#4a3426", desc:"trial 4 hari, duta ancam, duta ludo"}
+];
+const ROSTER_ORDER = ["AMOR", "NUNA", "MICU", "GEHENA", "TAR", "SAPIER", "Vee"];
+F.sort((a, b) => ROSTER_ORDER.indexOf(a.name) - ROSTER_ORDER.indexOf(b.name));
+const BOT = {name:"KOKO AYES", title:"", face:"😎", badge:"", color:"#e6c46a", hood:false, hp:95, power:1.0, speed:1.2, hair:"spiky", hairColor:"#d62828"};
+const WEAPON_ORDER = ["none", "pisau", "pedang", "pistol", "ketapel", "batu"];
+const WEAPONS = {
+  none:    {label:"Tangan kosong", kind:"hit",       range:125,  dmg:14, cd:400, hit:0.6,  pts:2},
+  pisau:   {label:"Pisau",        kind:"tusukan",   range:95,   dmg:10, cd:420, hit:0.85, pts:2},
+  pedang:  {label:"Pedang",       kind:"tebasan",   range:150,  dmg:16, cd:800, hit:0.7,  pts:2},
+  pistol:  {label:"Pistol ∞",     kind:"tembakan",  range:9999, dmg:12, cd:600, hit:0.75, pts:2, tracer:"#ffd54a"},
+  ketapel: {label:"Ketapel ∞",    kind:"lontaran",  range:9999, dmg:7,  cd:500, hit:0.7,  pts:1, tracer:"#c9d1d9"},
+  batu:    {label:"Batu ∞",       kind:"lemparan",  range:9999, dmg:5,  cd:400, hit:0.6,  pts:1, tracer:"#8b7d6b"}
+};
+const LEVELS = {
+  mudah:  {label:"Mudah",  delay:1.8, aggr:0.25, block:0.10, dmg:0.7},
+  sedang: {label:"Sedang", delay:1.2, aggr:0.45, block:0.20, dmg:1.0},
+  sulit:  {label:"Sulit",  delay:0.8, aggr:0.60, block:0.30, dmg:1.1},
+  bos:    {label:"Bos",    delay:0.5, aggr:0.75, block:0.40, dmg:1.3}
+};
+let level = "sedang";
+const REF = "gaMcuk";
+
+const CW = 480, CH = 260, GROUND = 200;
+const ROUND_LEN = 20, ROUNDS = 3, MATCHES = 5;
+let matchNo = 1;
+const RANGE = 125, MIN_GAP = 56, XMIN = 40, XMAX = 440;
+const ctx = document.getElementById("ring").getContext("2d");
+const $ = id => document.getElementById(id);
+const FONT = "'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',system-ui,sans-serif";
+
+let P, O, round, time, over = false, twoP = false, pickStage = 0, p1Idx = -1;
+let aiT = null, clk = null, raf = null, refT = -9999;
+
+const MOVE_KEYS = { a: ["P", -1], d: ["P", 1], j: ["O", -1], l: ["O", 1] };
+const ACT_KEYS = {
+  q: ["P", "jab"], w: ["P", "hook"], e: ["P", "block"], r: ["P", "dodge"],
+  i: ["O", "jab"], o: ["O", "hook"], k: ["O", "block"], u: ["O", "dodge"]
+};
+
+function init() {
+  document.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => setMode(+b.dataset.mode));
+
+  $("roster").onclick = e => {
+    const c = e.target.closest(".card");
+    if (c && !c.classList.contains("taken")) pick(+c.dataset.i);
+  };
+  $("levels").onclick = e => {
+    const b = e.target.closest("[data-lv]");
+    if (b) { level = b.dataset.lv; renderLevels(); }
+  };
+
+  // Tombol merespons saat jari menyentuh layar (tanpa menunggu lepas)
+  document.querySelectorAll("[data-a]").forEach(b => {
+    b.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      b.classList.add("pressed");
+      press(b.dataset.p, b.dataset.a);
+    });
+    const off = () => b.classList.remove("pressed");
+    b.addEventListener("pointerup", off);
+    b.addEventListener("pointerleave", off);
+    b.addEventListener("pointercancel", off);
+  });
+  document.querySelectorAll(".stick").forEach(bindStick);
+  $("quit").onclick = toMenu;
+  $("again").onclick = toMenu;
+  $("next").onclick = () => { matchNo++; $("over").classList.add("hidden"); beginMatch(); };
+
+  document.addEventListener("keydown", e => {
+    if (over || $("fight").classList.contains("hidden")) return;
+    const k = e.key.toLowerCase();
+    if (MOVE_KEYS[k]) {
+      const [who, dir] = MOVE_KEYS[k];
+      if (who === "O" && !twoP) return;
+      (who === "P" ? P : O).ax = dir;
+      return;
+    }
+    if (k === "c" || k === "m") {
+      const who = k === "c" ? "P" : "O";
+      if (who === "O" && !twoP) return;
+      press(who, "ult");
+      return;
+    }
+    if (k === "z" || k === "n") {
+      const who = k === "z" ? "P" : "O";
+      if (who === "O" && !twoP) return;
+      press(who, "jump");
+      return;
+    }
+    if (k === "t" || k === "y") {
+      const who = k === "t" ? "P" : "O";
+      if (who === "O" && !twoP) return;
+      cycleWeapon(who === "P" ? P : O);
+      return;
+    }
+    if (ACT_KEYS[k]) {
+      if (e.repeat) return;
+      const [who, type] = ACT_KEYS[k];
+      if (who === "O" && !twoP) return;
+      press(who, type);
+    }
+  });
+  document.addEventListener("keyup", e => {
+    const m = MOVE_KEYS[e.key.toLowerCase()];
+    if (m && P && O) (m[0] === "P" ? P : O).ax = 0;
+  });
+
+  setMode(1);
+}
+
+/* Joystick analog: geser knob ke kiri/kanan untuk bergerak */
+function bindStick(el) {
+  const knob = el.querySelector(".knob");
+  const who = el.dataset.p;
+  let R = 36;
+  let id = null;
+  const target = () => (who === "P" ? P : O);
+  const update = e => {
+    R = el.clientWidth * 0.36;
+    const dx = Math.max(-R, Math.min(R, e.offsetX - el.clientWidth / 2));
+    knob.style.transform = `translateX(${dx}px)`;
+    let a = dx / R;
+    if (Math.abs(a) < 0.15) a = 0;
+    const f = target();
+    if (f && (who === "P" || twoP)) f.ax = a;
+  };
+  const reset = () => {
+    id = null;
+    knob.style.transform = "translateX(0px)";
+    const f = target();
+    if (f) f.ax = 0;
+  };
+  el.addEventListener("pointerdown", e => {
+    if (over || !P || !O) return;
+    id = e.pointerId;
+    el.setPointerCapture(id);
+    update(e);
+    e.preventDefault();
+  });
+  el.addEventListener("pointermove", e => { if (e.pointerId === id) update(e); });
+  el.addEventListener("pointerup", reset);
+  el.addEventListener("pointercancel", reset);
+}
+
+function renderLevels() {
+  $("lvlRow").classList.toggle("hidden", twoP);
+  $("levels").innerHTML = Object.keys(LEVELS).map(k =>
+    `<button class="btn${k === level ? "" : " alt"}" data-lv="${k}">${LEVELS[k].label}</button>`
+  ).join("");
+}
+
+function setMode(m) {
+  twoP = m === 2;
+  pickStage = 0;
+  p1Idx = -1;
+  document.querySelectorAll("[data-mode]").forEach(b => b.classList.toggle("alt", +b.dataset.mode !== m));
+  renderRoster();
+  updatePickText();
+}
+
+function renderRoster() {
+  $("roster").innerHTML = F.map((f, i) => {
+    const taken = twoP && pickStage === 1 && i === p1Idx;
+    return `
+    <div class="card${i === F.length - 1 && F.length % 2 ? " wide" : ""}${taken ? " taken" : ""}" data-i="${i}">
+      <div class="face">${f.face}</div>
+      <div class="name">${f.name}</div>
+      <div class="title">${f.title}</div>
+      <div class="stats">HP ${Math.round(f.hp * 2.2)} · Pukul ${f.power} · Gerak ${f.speed}</div>
+      <div class="desc">${f.desc}</div>
+    </div>`;
+  }).join("");
+}
+
+function updatePickText() {
+  renderLevels();
+  if (!twoP) $("pick").textContent = "Pilih petinjumu. Lawan bot: KOKO AYES.";
+  else if (pickStage === 0) $("pick").textContent = "Pemain 1, pilih petinjumu";
+  else $("pick").textContent = "Pemain 2, pilih petinjumu";
+}
+
+function pick(i) {
+  if (!twoP) { start(i, null); return; }
+  if (pickStage === 0) {
+    p1Idx = i;
+    pickStage = 1;
+    renderRoster();
+    updatePickText();
+  } else {
+    const p1 = p1Idx;
+    pickStage = 0;
+    p1Idx = -1;
+    updatePickText();
+    start(p1, i);
+  }
+}
+
+function mk(f, dir, x) {
+  return { ...f, max: Math.round(f.hp * 2.2), hp: Math.round(f.hp * 2.2), dir, x, pts: 0, weapon: "none", shot: null, ult: 0, ax: 0, axUntil: 0, punchT: -9999, punchType: null, blockUntil: 0, dodgeUntil: 0, cdUntil: 0, hitT: -9999 };
+}
+
+function cycleWeapon(f) {
+  if (!f) return;
+  const i = WEAPON_ORDER.indexOf(f.weapon);
+  f.weapon = WEAPON_ORDER[(i + 1) % WEAPON_ORDER.length];
+  updateWeaponLabels();
+  log(`${f.name} pakai ${WEAPONS[f.weapon].label}.`);
+}
+
+function updateWeaponLabels() {
+  ["P", "O"].forEach(who => {
+    const f = who === "P" ? P : O;
+    const text = "Senjata: " + (f ? WEAPONS[f.weapon].label : WEAPONS.none.label);
+    document.querySelectorAll(`[data-p="${who}"][data-a="weapon"]`).forEach(b => b.textContent = text);
+  });
+}
+
+function drawHairExtra(f, x, top) {
+  if (f.hair === "braid") {
+    for (const side of [-1, 1]) {
+      for (let i = 0; i < 9; i++) {
+        ctx.fillStyle = i % 2 ? f.hair2 : f.hairColor;
+        ctx.beginPath();
+        ctx.arc(x + side * (25 + Math.sin(i * 0.8) * 1.5), top - 102 + i * 5.5, 4.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  } else if (f.hair === "kribo") {
+    ctx.fillStyle = f.hairColor;
+    for (let i = 0; i < 14; i++) {
+      const a = Math.PI * (1 + i / 13);
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(a) * 22, top - 118 + Math.sin(a) * 22, 7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.arc(x, top - 126, 13, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (f.hair === "botak") {
+    ctx.fillStyle = f.hairColor;
+    ctx.beginPath();
+    ctx.arc(x, top - 118, 19.5, Math.PI * 0.5, Math.PI * 1.5);
+    ctx.closePath();
+    ctx.fill();
+  } else if (f.hair === "gimbal") {
+    ctx.fillStyle = f.hairColor;
+    for (let i = 0; i < 20; i++) {
+      const a = Math.PI * (0.95 + (i / 19) * 1.1);
+      const r = 22 + (i % 3) * 3;
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(a) * r, top - 118 + Math.sin(a) * r, 6 + (i % 2) * 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (f.hair === "kribosebelah") {
+    ctx.fillStyle = f.hairColor;
+    [[-22, -122, 11], [-27, -109, 10], [-19, -134, 10], [-32, -123, 9], [-13, -141, 8], [-25, -98, 8]].forEach(([dx, dy, r]) => {
+      ctx.beginPath(); ctx.arc(x + dx, top + dy, r, 0, Math.PI * 2); ctx.fill();
+    });
+  } else if (f.hair === "lurus") {
+    ctx.fillStyle = f.hairColor;
+    ctx.beginPath(); ctx.arc(x, top - 118, 21, Math.PI, Math.PI * 2); ctx.closePath(); ctx.fill();
+    roundRectPath(x - 25, top - 122, 10, 64, 5); ctx.fill();
+    roundRectPath(x + 15, top - 122, 10, 64, 5); ctx.fill();
+    ctx.strokeStyle = shade(f.hairColor, 0.4);
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x - 20, top - 112); ctx.lineTo(x - 20, top - 70); ctx.moveTo(x + 20, top - 112); ctx.lineTo(x + 20, top - 70); ctx.stroke();
+  } else if (f.hair === "spiky") {
+    ctx.fillStyle = f.hairColor;
+    ctx.beginPath();
+    for (let i = 0; i <= 10; i++) {
+      const a = Math.PI * (1.02 + i * 0.096);
+      const r = i % 2 ? 16 : 30;
+      const px = x + Math.cos(a) * r, py = top - 118 + Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawWeapon(name, gx, gy, d) {
+  ctx.save();
+  ctx.translate(gx, gy);
+  ctx.scale(d, 1);
+  if (name === "pisau") {
+    ctx.fillStyle = "#3a2a1e";
+    ctx.fillRect(-7, -3, 8, 6);
+    ctx.fillStyle = "#dfe6ec";
+    ctx.beginPath(); ctx.moveTo(1, -4); ctx.lineTo(20, 0); ctx.lineTo(1, 4); ctx.closePath(); ctx.fill();
+  } else if (name === "pedang") {
+    ctx.fillStyle = "#c9a227";
+    ctx.fillRect(-4, -5, 4, 10);
+    ctx.fillStyle = "#e6edf3";
+    ctx.fillRect(0, -2, 46, 4);
+    ctx.beginPath(); ctx.moveTo(46, -2); ctx.lineTo(54, 0); ctx.lineTo(46, 2); ctx.closePath(); ctx.fill();
+  } else if (name === "pistol") {
+    ctx.fillStyle = "#2b2b2b";
+    ctx.fillRect(-2, -4, 20, 7);
+    ctx.fillRect(-2, 3, 6, 8);
+  } else if (name === "ketapel") {
+    ctx.strokeStyle = "#6b4a2b";
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-2, -12); ctx.lineTo(-9, 0); ctx.lineTo(-2, 12); ctx.stroke();
+    ctx.strokeStyle = "#2b2b2b";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(-2, -12); ctx.lineTo(8, 0); ctx.lineTo(-2, 12); ctx.stroke();
+  } else if (name === "batu") {
+    ctx.fillStyle = "#8b7d6b";
+    ctx.beginPath(); ctx.arc(4, 0, 6, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawShots(t) {
+  [P, O].forEach(f => {
+    if (!f || !f.shot || t - f.shot.t > 160) return;
+    const other = f === P ? O : P;
+    const ay = GROUND - 92;
+    ctx.strokeStyle = f.shot.col;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(f.x + f.dir * 20, ay);
+    ctx.lineTo(other.x, ay - 4);
+    ctx.stroke();
+  });
+}
+
+function fitStage() {
+  const f = $("fight");
+  if (f.classList.contains("hidden")) return;
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const rot = vh > vw;
+  const W = 960, H = 440;
+  const s = rot ? Math.min(vh / W, vw / H) : Math.min(vw / W, vh / H);
+  f.style.setProperty("--rot", rot ? "rotate(90deg)" : "rotate(0deg)");
+  f.style.setProperty("--s", s);
+}
+
+function applyLayout() {
+  const f = $("fight");
+  const land = !f.classList.contains("hidden");
+  f.classList.toggle("stage", land);
+  fitStage();
+  f.classList.toggle("duo", twoP);
+
+  if (land && screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock("landscape").catch(() => {});
+  }
+}
+window.addEventListener("resize", applyLayout);
+
+function start(pi, oi) {
+  P = mk(F[pi], 1, 150);
+  O = oi === null ? mk(BOT, -1, 330) : mk(F[oi], -1, 330);
+  applyBrunoName(P, F[pi]);
+  if (oi !== null) applyBrunoName(O, F[oi]);
+  if (oi === null) O.weapon = WEAPON_ORDER[Math.floor(Math.random() * WEAPON_ORDER.length)];
+  updateDirs();
+  round = 1;
+  time = ROUND_LEN;
+  over = false;
+  matchNo = 1;
+
+  $("menu").classList.add("hidden");
+  $("fight").classList.remove("hidden");
+  $("pn").textContent = P.face + " " + P.name + (twoP ? " (P1)" : "");
+  $("on").textContent = O.name + (twoP ? " (P2)" : " (bot " + LEVELS[level].label + ")");
+  $("pb").style.background = P.color;
+  $("ob").style.background = O.color;
+  $("lp").textContent = twoP ? `Pemain 1 · ${P.name}` : P.name;
+  $("lo").textContent = `Pemain 2 · ${O.name}`;
+  $("ctrlO").classList.toggle("hidden", !twoP);
+  updateWeaponLabels();
+  $("keys").textContent = twoP
+    ? "P1: A/D gerak · Q jab · W hit · E tangkis · R hindar   |   P2: J/L gerak · I jab · O hit · K tangkis · U hindar"
+    : "A/D gerak · Q jab · W hit · E tangkis · R hindar";
+  applyLayout();
+
+  refT = performance.now();
+  log(`${REF}: Ronde 1 dari ${ROUNDS}. Silakan bertarung!`);
+  hud();
+
+  clearTimeout(aiT);
+  if (!twoP) aiT = setTimeout(ai, 1000);
+  clearInterval(clk);
+  clk = setInterval(tick, 100);
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(frame);
+}
+
+function toMenu() {
+  over = true;
+  clearTimeout(aiT);
+  clearInterval(clk);
+  cancelAnimationFrame(raf);
+  $("over").classList.add("hidden");
+  $("fight").classList.add("hidden");
+  $("menu").classList.remove("hidden");
+  setMode(twoP ? 2 : 1);
+}
+
+function updateDirs() {
+  const d = O.x > P.x ? 1 : -1;
+  P.dir = d;
+  O.dir = -d;
+}
+
+function press(who, type) {
+  if (over) return;
+  const f = who === "P" ? P : O;
+  if (!f || (!twoP && f === O)) return;
+  if (performance.now() < (f.stunUntil || 0) && type !== "ult") { log(`${f.name} terkunci!`); return; }
+  if (type === "block") { tangkis(f); return; }
+  if (type === "dodge") { hindar(f); return; }
+  if (type === "weapon") { cycleWeapon(f); return; }
+  if (type === "jump") { jumpF(f); return; }
+  if (type === "ult") { ultimate(f); return; }
+  attack(f, f === P ? O : P, type);
+}
+
+/* Gerak analog: dijalankan tiap frame */
+function moveAll() {
+  if (over || !P || !O) return;
+  if (!twoP && performance.now() > O.axUntil) O.ax = 0;
+  const now = performance.now();
+  [P, O].forEach(f => {
+    if (now < (f.stunUntil || 0)) return;
+    let a = f.ax;
+    if (now < (f.reverseUntil || 0)) a = -a;
+    if (a) moveFighter(f, a);
+  });
+}
+
+function moveFighter(f, a) {
+  const opp = f === P ? O : P;
+  const spd = f.boostUntil && performance.now() < f.boostUntil ? 1.6 : 1;
+  let nx = f.x + a * 3.2 * f.speed * spd;
+  nx = Math.max(XMIN, Math.min(XMAX, nx));
+  f.x = Math.max(XMIN, Math.min(XMAX, nx));
+  updateDirs();
+}
+
+/* Bot: gerak ke arah lawan (maju) atau menjauh (mundur) */
+function botMove(forward, ms) {
+  const s = Math.sign(P.x - O.x) || 1;
+  O.ax = forward ? s : -s;
+  O.axUntil = performance.now() + ms;
+}
+
+function tangkis(f) {
+  const t = performance.now();
+  if (t < f.cdUntil) return;
+  f.blockUntil = t + 700;
+  f.cdUntil = t + 350;
+  log(`${f.name} menangkis!`);
+}
+
+function hindar(f) {
+  const t = performance.now();
+  if (t < f.cdUntil) return;
+  f.dodgeUntil = t + 450;
+  f.cdUntil = t + 600;
+  log(`${f.name} menghindar!`);
+}
+
+function attack(a, d, type) {
+  const t = performance.now();
+  if (t < a.cdUntil || over) return;
+  if (inAir(a, t)) { log(`${a.name} masih di udara!`); return; }
+  if (t < (a.stunUntil || 0)) { log(`${a.name} terlilit, tidak bisa menyerang!`); return; }
+  const w = type === "jab" ? { label: "", kind: "jab", range: 125, dmg: 6, cd: 200, hit: 0.8, pts: 1 } : WEAPONS[a.weapon || "none"];
+  const isWeapon = type !== "jab" && (a.weapon || "none") !== "none";
+  a.cdUntil = t + w.cd / a.speed;
+  a.punchT = t;
+  a.punchType = (type === "jab" || (isWeapon && w.kind !== "tebasan")) ? "jab" : "hook";
+  if (w.tracer) a.shot = { t, col: w.tracer };
+  const kind = w.kind;
+  const gap = Math.abs(d.x - a.x);
+  if (gap > w.range && gap <= w.range + 70 && w.range < 9999) {
+    const s = Math.sign(d.x - a.x) || 1;
+    a.x = Math.max(XMIN, Math.min(XMAX, d.x - s * Math.max(MIN_GAP, w.range - 6)));
+    updateDirs();
+  }
+  if (Math.abs(d.x - a.x) > w.range) { log(`${a.name} ${kind} kejauhan!`); return; }
+  if (d.dodgeUntil > t || inAir(d, t)) { log(`${d.name} menghindar dari ${kind} ${a.name}!`); return; }
+  if (Math.random() > w.hit) { log(`${a.name} ${kind} meleset.`); return; }
+  let dmg = w.dmg * a.power * 0.6 * (0.8 + Math.random() * 0.4);
+  if (!twoP && a === O) dmg *= LEVELS[level].dmg;
+  const pts = w.pts;
+  if (d.blockUntil > t) {
+    dmg *= 0.3;
+    log(`${a.name} ${kind} ditangkis! -${Math.round(dmg)} HP`);
+  } else {
+    a.ult = Math.min(100, a.ult + 12);
+    d.ult = Math.min(100, d.ult + 8);
+    log(`${a.name} ${kind} kena! -${Math.round(dmg)} HP`);
+  }
+  d.hp = Math.max(0, d.hp - dmg);
+  d.hitT = t;
+  hud();
+  if (d.hp <= 0) endFight("ko", a);
+}
+
+function attackOld(a, d, type) {
+  const t = performance.now();
+  if (t < a.cdUntil || over) return;
+  const jab = type === "jab";
+  a.punchT = t;
+  a.punchType = type;
+  a.cdUntil = t + (jab ? 280 : 550) / a.speed;
+
+  const kind = jab ? "jab" : "hit";
+  if (Math.abs(d.x - a.x) > RANGE) {
+    log(`${a.name} ${kind} kejauhan!`);
+    return;
+  }
+  if (d.dodgeUntil > t) {
+    log(`${d.name} menghindar dari ${kind} ${a.name}!`);
+    return;
+  }
+  const hitChance = jab ? 0.8 : 0.6;
+  if (Math.random() > hitChance) {
+    log(`${a.name} ${kind} meleset.`);
+    return;
+  }
+
+  let dmg = (jab ? 6 : 14) * a.power * (0.8 + Math.random() * 0.4);
+  if (!twoP && a === O) dmg *= LEVELS[level].dmg;
+  const blocked = d.blockUntil > t;
+  if (blocked) {
+    dmg *= 0.3;
+    log(`${a.name} ${kind} ditangkis! -${Math.round(dmg)} HP`);
+  } else {
+    a.pts += jab ? 1 : 2;
+    log(`${a.name} ${kind} kena! +${jab ? 1 : 2} poin, -${Math.round(dmg)} HP`);
+  }
+  d.hp = Math.max(0, d.hp - dmg);
+  d.hitT = t;
+  hud();
+  if (d.hp <= 0) endFight("ko", a);
+}
+
+function ai() {
+  if (over || twoP) return;
+  const dist = Math.abs(O.x - P.x);
+  const r = Math.random();
+  const L = LEVELS[level];
+  if (O.ult >= 100 && Math.random() < 0.25) ultimate(O);
+  if (!inAir(O, performance.now()) && Math.random() < 0.08 + L.aggr * 0.12) jumpF(O);
+  const bw = RANGE;
+  if (dist > bw) {
+    botMove(true, 450);
+  } else if (r < L.aggr * 0.5) {
+    attack(O, P, "jab");
+  } else if (r < L.aggr * 0.8) {
+    attack(O, P, "hook");
+  } else if (r < L.aggr * 0.8 + L.block) {
+    tangkis(O);
+  } else {
+    attack(O, P, "hook");
+  }
+  aiT = setTimeout(ai, (600 + Math.random() * 600) * L.delay / O.speed);
+}
+
+function tick() {
+  if (over) return;
+  time = Math.max(0, time - 0.1);
+  P.ult = Math.min(100, P.ult + 0.15);
+  O.ult = Math.min(100, O.ult + 0.15);
+  if (time <= 0) {
+    if (round >= ROUNDS) { endFight("points"); return; }
+    log(`${REF}: Ronde ${round} selesai. Poin ${P.pts} - ${O.pts}`);
+    round++;
+    time = ROUND_LEN;
+    P.x = 150;
+    O.x = 330;
+    updateDirs();
+    refT = performance.now();
+  }
+  hud();
+}
+
+function beginMatch() {
+  P.hp = P.max;
+  O.hp = O.max;
+  P.x = 150;
+  O.x = 330;
+  P.ax = 0;
+  O.ax = 0;
+  updateDirs();
+  round = 1;
+  time = ROUND_LEN;
+  over = false;
+  refT = performance.now();
+  log(`${REF}: Match ${matchNo} dimulai! Silakan bertarung.`);
+  hud();
+  clearTimeout(aiT);
+  if (!twoP) aiT = setTimeout(ai, 1000);
+  clearInterval(clk);
+  clk = setInterval(tick, 100);
+  cancelAnimationFrame(raf);
+  raf = requestAnimationFrame(frame);
+}
+
+function endFight(how, w) {
+  if (over) return;
+  over = true;
+  clearTimeout(aiT);
+  clearInterval(clk);
+  refT = performance.now();
+  let winner = null;
+  if (how === "ko") winner = w;
+  else if (P.hp !== O.hp) winner = P.hp > O.hp ? P : O;
+  if (winner) winner.pts += 1;
+  hud();
+  let title, sub;
+  if (matchNo >= MATCHES) {
+    const champ = P.pts === O.pts ? null : (P.pts > O.pts ? P : O);
+    title = champ ? `${champ.name} juara!` : "Seri akhir";
+    sub = `Skor akhir ${P.name} ${P.pts} - ${O.pts} ${O.name}.`;
+    $("next").classList.add("hidden");
+    log(`${REF}: Pertandingan selesai!`);
+  } else {
+    title = winner ? `${winner.name} menang match ${matchNo}` : `Match ${matchNo} seri`;
+    sub = `Skor ${P.name} ${P.pts} - ${O.pts} ${O.name}. Lanjut ke match ${matchNo + 1}?`;
+    $("next").classList.remove("hidden");
+    log(`${REF}: ${title}!`);
+  }
+  $("ot").textContent = title;
+  $("os").textContent = sub;
+  $("over").classList.remove("hidden");
+}
+
+function endFightOld(how, w) {
+  if (over) return;
+  over = true;
+  clearTimeout(aiT);
+  clearInterval(clk);
+  refT = performance.now();
+  let title, sub;
+  if (how === "ko") {
+    title = `KO! ${w.name} menang`;
+    sub = `${REF} menghentikan pertandingan. Poin ${P.pts} - ${O.pts}.`;
+    log(`${REF}: Satu... dua... tiga... KO!`);
+  } else if (P.pts === O.pts) {
+    title = "Seri";
+    sub = `Poin sama, ${P.pts} - ${O.pts}.`;
+    log(`${REF}: Pertandingan seri!`);
+  } else {
+    const win = P.pts > O.pts ? P : O;
+    title = `${win.name} menang!`;
+    sub = `Poin akhir ${P.pts} - ${O.pts}.`;
+    log(`${REF}: ${win.name} dinyatakan menang!`);
+  }
+  hud();
+  $("ot").textContent = title;
+  $("os").textContent = sub;
+  $("over").classList.remove("hidden");
+}
+
+function hud() {
+  $("ph").textContent = Math.ceil(P.hp) + "/" + P.max;
+  $("oh").textContent = Math.ceil(O.hp) + "/" + O.max;
+  $("pb").style.width = (P.hp / P.max * 100) + "%";
+  $("ob").style.width = (O.hp / O.max * 100) + "%";
+  $("rd").textContent = `M${matchNo} · R${round}/${ROUNDS} · ${Math.ceil(time)}s`;
+  $("pts").textContent = `${P.pts} : ${O.pts}`;
+  updateUltLabels();
+}
+
+let banner = null;
+function log(m) {
+  $("log").textContent = m;
+  banner = { text: m, t: performance.now() };
+}
+
+function drawBanner(t) {
+  if (!banner || t - banner.t > 1400) return;
+  const alpha = Math.min(1, (1400 - (t - banner.t)) / 400);
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.font = "bold 13px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  const w = ctx.measureText(banner.text).width + 24;
+  ctx.fillStyle = "rgba(0,0,0,.6)";
+  roundRectPath(CW / 2 - w / 2, 8, w, 26, 13);
+  ctx.fill();
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText(banner.text, CW / 2, 26);
+  ctx.restore();
+}
+
+/* ---------- Gambar ---------- */
+
+function frame() {
+  moveAll();
+  draw(performance.now());
+  raf = requestAnimationFrame(frame);
+}
+
+function shade(hex, p) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = [n >> 16, (n >> 8) & 255, n & 255].map(v =>
+    Math.round(p >= 0 ? v + (255 - v) * p : v * (1 + p))
+  );
+  return "#" + ch.map(v => v.toString(16).padStart(2, "0")).join("");
+}
+
+function draw(t) {
+  ctx.clearRect(0, 0, CW, CH);
+
+  const bg = ctx.createLinearGradient(0, 0, 0, GROUND);
+  bg.addColorStop(0, "#1b1714");
+  bg.addColorStop(1, "#3a302a");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, CW, GROUND);
+  const glow = ctx.createRadialGradient(CW / 2, 0, 10, CW / 2, 0, 260);
+  glow.addColorStop(0, "rgba(255,214,150,.22)");
+  glow.addColorStop(1, "rgba(255,214,150,0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, CW, GROUND);
+
+  const fl = ctx.createLinearGradient(0, GROUND, 0, CH);
+  fl.addColorStop(0, "#5b4b3f");
+  fl.addColorStop(1, "#3b3029");
+  ctx.fillStyle = fl;
+  ctx.fillRect(0, GROUND, CW, CH - GROUND);
+  ctx.strokeStyle = "rgba(255,255,255,.14)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND); ctx.lineTo(CW, GROUND);
+  ctx.stroke();
+
+  ctx.fillStyle = "#2a2622";
+  ctx.fillRect(0, 26, 10, GROUND - 26);
+  ctx.fillRect(CW - 10, 26, 10, GROUND - 26);
+  ["#d7432f", "#f4f1ea", "#2f86c4"].forEach((c, i) => {
+    const y = 50 + i * 26;
+    ctx.strokeStyle = "rgba(0,0,0,.25)";
+    ctx.lineWidth = 6;
+    ctx.beginPath(); ctx.moveTo(0, y + 2); ctx.lineTo(CW, y + 2); ctx.stroke();
+    ctx.strokeStyle = c;
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke();
+  });
+
+  drawReferee(t);
+  if (!O || !P) return;
+  drawFighter(O, t);
+  drawFighter(P, t);
+  drawShots(t);
+  drawBanner(t);
+}
+
+function drawReferee(t) {
+  const x = 240, y = GROUND;
+  const fur = "#9a9aa6", stripe = "#4a4a55";
+
+  ctx.fillStyle = "rgba(0,0,0,.28)";
+  ctx.beginPath(); ctx.ellipse(x, y + 3, 26, 6, 0, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = "#1c1814";
+  ctx.beginPath(); ctx.ellipse(x - 9, y - 4, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x + 9, y - 4, 7, 5, 0, 0, Math.PI * 2); ctx.fill();
+
+  ctx.strokeStyle = fur;
+  ctx.lineWidth = 6;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x + 18, y - 12);
+  ctx.quadraticCurveTo(x + 46, y - 16, x + 40, y - 50);
+  ctx.stroke();
+  ctx.lineCap = "butt";
+
+  const body = ctx.createLinearGradient(x - 20, 0, x + 20, 0);
+  body.addColorStop(0, "#ffffff");
+  body.addColorStop(1, "#d9d9de");
+  ctx.fillStyle = body;
+  roundRectPath(x - 20, y - 88, 40, 64, 12);
+  ctx.fill();
+  ctx.fillStyle = "#1c1814";
+  for (let i = 0; i < 4; i++) ctx.fillRect(x - 20, y - 80 + i * 14, 40, 6);
+
+  ctx.fillStyle = fur;
+  ctx.beginPath();
+
+  ctx.fillStyle = "#f2a7b0";
+  ctx.beginPath();
+
+
+  const hg = ctx.createRadialGradient(x - 4, y - 106, 2, x, y - 100, 18);
+  hg.addColorStop(0, "#b4b4bf");
+  hg.addColorStop(1, fur);
+  ctx.fillStyle = hg;
+  ctx.beginPath(); ctx.arc(x, y - 100, 17, 0, Math.PI * 2); ctx.fill();
+
+  ctx.strokeStyle = stripe;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 115); ctx.lineTo(x, y - 110);
+  ctx.moveTo(x - 4, y - 114); ctx.lineTo(x - 4, y - 110);
+  ctx.moveTo(x + 4, y - 114); ctx.lineTo(x + 4, y - 110);
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `38px ${FONT}`;
+  ctx.fillText("😏", x, y - 98);
+  ctx.textBaseline = "alphabetic";
+
+
+
+  const raised = over || t - refT < 700;
+  const ex = x + 24, ey = raised ? y - 116 : y - 64;
+  ctx.strokeStyle = fur;
+  ctx.lineWidth = 7;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x + 18, y - 76);
+  ctx.lineTo(ex, ey);
+  ctx.stroke();
+  ctx.lineCap = "butt";
+  ctx.fillStyle = "#f2a7b0";
+  ctx.beginPath(); ctx.arc(ex, ey - 4, 6, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = "rgba(255,255,255,.8)";
+  ctx.font = "bold 11px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(REF, x, y - 136);
+}
+
+function drawFighter(f, t) {
+  const y = GROUND, d = f.dir;
+  const down = f.hp <= 0;
+  const bob = down ? 0 : Math.sin(t / 380 + (f === P ? 0 : 1.7)) * 2;
+  const dodging = t < f.dodgeUntil;
+  const lean = dodging ? -d * 12 : 0;
+  const x = f.x + lean;
+  const top = y - bob;
+  const hurt = t - f.hitT < 150;
+  const blocking = t < f.blockUntil;
+
+  ctx.fillStyle = "rgba(0,0,0,.28)";
+  ctx.beginPath(); ctx.ellipse(f.x, y + 3, 36, 7, 0, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = "#e2aa7a";
+  roundRectPath(x - 16, y - 30, 12, 30, 5); ctx.fill();
+  roundRectPath(x + 4, y - 30, 12, 30, 5); ctx.fill();
+  ctx.fillStyle = "#17171f";
+  roundRectPath(x - 19, y - 7, 18, 8, 4); ctx.fill();
+  roundRectPath(x + 1, y - 7, 18, 8, 4); ctx.fill();
+
+  ctx.fillStyle = "#1d1b24";
+  roundRectPath(x - 23, y - 54, 46, 28, 7); ctx.fill();
+  ctx.fillStyle = f.color;
+  ctx.fillRect(x - 23, y - 54, 46, 5);
+
+  const tg = ctx.createLinearGradient(x - 26, 0, x + 26, 0);
+  tg.addColorStop(0, hurt ? "#ffffff" : shade(f.color, 0.18));
+  tg.addColorStop(1, hurt ? "#dddddd" : shade(f.color, -0.25));
+  ctx.fillStyle = tg;
+  roundRectPath(x - 26, top - 100, 52, 60, 18); ctx.fill();
+
+  ctx.fillStyle = "#dca475";
+  ctx.fillRect(x - 6, top - 106, 12, 9);
+
+  const sg = ctx.createRadialGradient(x - 6, top - 124, 3, x, top - 118, 22);
+  sg.addColorStop(0, "#f4cda4");
+  sg.addColorStop(1, "#dca475");
+  ctx.fillStyle = sg;
+  ctx.beginPath(); ctx.arc(x, top - 118, 19, 0, Math.PI * 2); ctx.fill();
+
+  if (f.hood) {
+    ctx.fillStyle = f.hood2;
+    ctx.beginPath();
+    ctx.arc(x, top - 118, 22, Math.PI, Math.PI * 2);
+    ctx.closePath();
+    ctx.fill();
+    roundRectPath(x - 23, top - 118, 11, 46, 6); ctx.fill();
+    roundRectPath(x + 12, top - 118, 11, 46, 6); ctx.fill();
+    roundRectPath(x - 27, top - 80, 54, 16, 8); ctx.fill();
+  } else if (!f.hair) {
+    ctx.fillStyle = "#2b1d14";
+    ctx.beginPath();
+    ctx.arc(x, top - 118, 19.5, Math.PI * 1.02, Math.PI * 1.98);
+    ctx.fill();
+  }
+
+  drawHairExtra(f, x, top);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `22px ${FONT}`;
+  ctx.fillText(f.face, x, top - 114);
+  ctx.textBaseline = "alphabetic";
+
+  if (down) {
+    ctx.fillStyle = "#ffe066";
+    ctx.font = "bold 22px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("KO", x, top - 150);
+    return;
+  }
+
+  let gx = x + d * 26, gy = top - 80;
+  const pt = t - f.punchT;
+  const dur = f.punchType === "hook" ? 280 : 180;
+  if (!blocking && pt >= 0 && pt < dur) {
+    const e = Math.sin((pt / dur) * Math.PI);
+    if (f.punchType === "hook") {
+      gx = x + d * (26 + e * 36);
+      gy = top - 80 - e * 16;
+    } else {
+      gx = x + d * (26 + e * 58);
+      gy = top - 84;
+    }
+  }
+  const guardX = x + d * 14, guardY = top - 96;
+
+  if (blocking) {
+    arm(x - d * 10, top - 84, x + d * 16, top - 110, f.color);
+    arm(x - d * 10, top - 84, x + d * 16, top - 88, f.color);
+    glove(x + d * 16, top - 110);
+    glove(x + d * 16, top - 88);
+    return;
+  }
+
+  arm(x - d * 12, top - 84, guardX, guardY, f.color);
+  arm(x + d * 12, top - 84, gx, gy, f.color);
+  glove(guardX, guardY);
+  glove(gx, gy);
+  if (f.weapon && f.weapon !== "none") drawWeapon(f.weapon, gx, gy, d);
+}
+
+function arm(sx, sy, ex, ey, color) {
+  ctx.strokeStyle = shade(color, -0.1);
+  ctx.lineWidth = 10;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(sx, sy);
+  ctx.lineTo(ex, ey);
+  ctx.stroke();
+  ctx.lineCap = "butt";
+}
+
+function glove(gx, gy) {
+  const g = ctx.createRadialGradient(gx - 4, gy - 5, 2, gx, gy, 15);
+  g.addColorStop(0, "#ffffff");
+  g.addColorStop(1, "#cfc6b8");
+  ctx.beginPath();
+  ctx.arc(gx, gy, 14, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "#1c1814";
+  ctx.stroke();
+}
+
+function roundRectPath(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+init();
+</script>
+<script>
+/* Gaya 2D halus: siluet melengkung, arena dengan lantai dan tali melengkung */
+function draw(t) {
+  ctx.clearRect(0, 0, CW, CH);
+
+  const sky = ctx.createLinearGradient(0, 0, 0, GROUND + 20);
+  sky.addColorStop(0, "#2b2140");
+  sky.addColorStop(1, "#6a4450");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, CW, GROUND + 20);
+
+  [110, 370].forEach(x => {
+    const g = ctx.createRadialGradient(x, 0, 4, x, 0, 170);
+    g.addColorStop(0, "rgba(255,220,150,.45)");
+    g.addColorStop(1, "rgba(255,220,150,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, CW, GROUND);
+  });
+
+  ctx.fillStyle = "rgba(30,16,30,.6)";
+  for (let i = 0; i < 13; i++) {
+    const cx = 20 + i * 38 + (i % 2) * 8;
+    const cy = 150 + (i % 3) * 5;
+    ctx.beginPath(); ctx.arc(cx, cy, 11, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx, cy + 24, 17, 20, 0, Math.PI, Math.PI * 2); ctx.fill();
+  }
+
+  const fl = ctx.createLinearGradient(0, GROUND - 14, 0, CH);
+  fl.addColorStop(0, "#6b4f3f");
+  fl.addColorStop(1, "#3a2a22");
+  ctx.fillStyle = fl;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND + 12);
+  ctx.quadraticCurveTo(CW / 2, GROUND - 14, CW, GROUND + 12);
+  ctx.lineTo(CW, CH);
+  ctx.lineTo(0, CH);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,.18)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, GROUND + 12);
+  ctx.quadraticCurveTo(CW / 2, GROUND - 14, CW, GROUND + 12);
+  ctx.stroke();
+
+  [22, CW - 22].forEach(x => {
+    ctx.strokeStyle = "#2c2430";
+    ctx.lineWidth = 9;
+    ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x, 36); ctx.lineTo(x, GROUND - 10); ctx.stroke();
+    ctx.fillStyle = "#2c2430";
+    ctx.beginPath(); ctx.arc(x, 34, 7, 0, Math.PI * 2); ctx.fill();
+  });
+  ["#e0463a", "#f4f1ea", "#3a8fd6"].forEach((c, i) => {
+    const y0 = 58 + i * 26;
+    ctx.strokeStyle = c;
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(22, y0);
+    ctx.quadraticCurveTo(CW / 2, y0 + 16, CW - 22, y0);
+    ctx.stroke();
+  });
+
+  drawReferee(t);
+  if (!O || !P) return;
+  drawFighter(O, t);
+  drawFighter(P, t);
+  drawShots(t);
+  drawBanner(t);
+}
+
+function refBodyPath(x, y) {
+  ctx.beginPath();
+  ctx.moveTo(x - 18, y - 30);
+  ctx.quadraticCurveTo(x - 24, y - 70, x - 14, y - 86);
+  ctx.quadraticCurveTo(x, y - 92, x + 14, y - 86);
+  ctx.quadraticCurveTo(x + 24, y - 70, x + 18, y - 30);
+  ctx.quadraticCurveTo(x, y - 22, x - 18, y - 30);
+  ctx.closePath();
+}
+
+function drawReferee(t) {
+  const x = 240, y = GROUND;
+
+  ctx.fillStyle = "rgba(0,0,0,.25)";
+  ctx.beginPath(); ctx.ellipse(x, y + 3, 26, 6, 0, 0, Math.PI * 2); ctx.fill();
+
+  ctx.strokeStyle = "#9a9aa6";
+  ctx.lineWidth = 7;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x + 14, y - 12);
+  ctx.quadraticCurveTo(x + 46, y - 16, x + 40, y - 52);
+  ctx.stroke();
+
+  ctx.strokeStyle = "#1c1814";
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.moveTo(x - 9, y - 16); ctx.lineTo(x - 10, y - 4);
+  ctx.moveTo(x + 9, y - 16); ctx.lineTo(x + 10, y - 4);
+  ctx.stroke();
+
+  refBodyPath(x, y);
+  ctx.fillStyle = "#f4f4f6";
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = "#1c1814";
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.ellipse(x, y - 78 + i * 18, 40, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  ctx.fillStyle = "#f4f4f6";
+  ctx.beginPath(); ctx.arc(x, y - 104, 20, 0, Math.PI * 2); ctx.fill();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `38px ${FONT}`;
+  ctx.fillText("😏", x, y - 102);
+  ctx.textBaseline = "alphabetic";
+
+  const raised = over || t - refT < 700;
+  const ex = x + 26, ey = raised ? y - 120 : y - 64;
+  ctx.strokeStyle = "#f4f4f6";
+  ctx.lineWidth = 8;
+  ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(x + 16, y - 70); ctx.lineTo(ex, ey); ctx.stroke();
+  ctx.fillStyle = "#f4f4f6";
+  ctx.beginPath(); ctx.arc(ex, ey, 7, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = "rgba(255,255,255,.85)";
+  ctx.font = "bold 11px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(REF, x, y - 138);
+}
+
+function drawFighter(f, t) {
+  const y = GROUND, d = f.dir;
+  const down = f.hp <= 0;
+  const bob = down ? 0 : Math.sin(t / 380 + (f === P ? 0 : 1.7)) * 2;
+  const dodging = t < f.dodgeUntil;
+  const lean = dodging ? -d * 12 : 0;
+  const x = f.x + lean;
+  const top = y - bob;
+  const hurt = t - f.hitT < 150;
+  const blocking = t < f.blockUntil;
+
+  ctx.fillStyle = "rgba(0,0,0,.25)";
+  ctx.beginPath(); ctx.ellipse(f.x, y + 3, 34, 6, 0, 0, Math.PI * 2); ctx.fill();
+
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "#e2aa7a";
+  ctx.lineWidth = 12;
+  ctx.beginPath();
+  ctx.moveTo(x - 8, y - 40); ctx.quadraticCurveTo(x - 11, y - 22, x - 10, y - 9);
+  ctx.moveTo(x + 8, y - 40); ctx.quadraticCurveTo(x + 11, y - 22, x + 10, y - 9);
+  ctx.stroke();
+  ctx.fillStyle = "#17171f";
+  ctx.beginPath(); ctx.ellipse(x - 12, y - 5, 11, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x + 12, y - 5, 11, 6, 0, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = "#1d1b24";
+  ctx.beginPath(); ctx.ellipse(x, y - 40, 24, 14, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = f.color;
+  ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.ellipse(x, y - 40, 22, 11, 0, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+
+  const tg = ctx.createLinearGradient(x - 30, 0, x + 30, 0);
+  tg.addColorStop(0, hurt ? "#ffffff" : shade(f.color, 0.18));
+  tg.addColorStop(1, hurt ? "#dddddd" : shade(f.color, -0.25));
+  ctx.beginPath();
+  ctx.moveTo(x - 22, top - 44);
+  ctx.quadraticCurveTo(x - 30, top - 84, x - 18, top - 98);
+  ctx.quadraticCurveTo(x, top - 106, x + 18, top - 98);
+  ctx.quadraticCurveTo(x + 30, top - 84, x + 22, top - 44);
+  ctx.quadraticCurveTo(x, top - 36, x - 22, top - 44);
+  ctx.closePath();
+  ctx.fillStyle = tg;
+  ctx.fill();
+
+  ctx.fillStyle = "#dca475";
+  ctx.beginPath(); ctx.ellipse(x, top - 102, 8, 8, 0, 0, Math.PI * 2); ctx.fill();
+
+  const sg = ctx.createRadialGradient(x - 6, top - 124, 3, x, top - 118, 22);
+  sg.addColorStop(0, "#f4cda4");
+  sg.addColorStop(1, "#dca475");
+  ctx.fillStyle = sg;
+  ctx.beginPath(); ctx.arc(x, top - 118, 19, 0, Math.PI * 2); ctx.fill();
+
+  if (f.hood) {
+    ctx.fillStyle = f.hood2;
+    ctx.beginPath();
+    ctx.arc(x, top - 118, 22, Math.PI, Math.PI * 2);
+    ctx.closePath();
+    ctx.fill();
+    roundRectPath(x - 23, top - 118, 11, 46, 6); ctx.fill();
+    roundRectPath(x + 12, top - 118, 11, 46, 6); ctx.fill();
+    roundRectPath(x - 27, top - 80, 54, 16, 8); ctx.fill();
+  } else if (!f.hair) {
+    ctx.fillStyle = "#2b1d14";
+    ctx.beginPath();
+    ctx.arc(x, top - 118, 19.5, Math.PI * 1.02, Math.PI * 1.98);
+    ctx.fill();
+  }
+
+  drawHairExtra(f, x, top);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `22px ${FONT}`;
+  ctx.fillText(f.face, x, top - 114);
+  ctx.textBaseline = "alphabetic";
+
+  if (down) {
+    ctx.fillStyle = "#ffe066";
+    ctx.font = "bold 22px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("KO", x, top - 150);
+    return;
+  }
+
+  let gx = x + d * 26, gy = top - 80;
+  const pt = t - f.punchT;
+  const dur = f.punchType === "hook" ? 280 : 180;
+  if (!blocking && pt >= 0 && pt < dur) {
+    const e = Math.sin((pt / dur) * Math.PI);
+    if (f.punchType === "hook") {
+      gx = x + d * (26 + e * 36);
+      gy = top - 80 - e * 16;
+    } else {
+      gx = x + d * (26 + e * 58);
+      gy = top - 84;
+    }
+  }
+  const guardX = x + d * 14, guardY = top - 96;
+
+  if (blocking) {
+    arm(x - d * 10, top - 84, x + d * 16, top - 110, f.color);
+    arm(x - d * 10, top - 84, x + d * 16, top - 88, f.color);
+    glove(x + d * 16, top - 110);
+    glove(x + d * 16, top - 88);
+    return;
+  }
+
+  arm(x - d * 12, top - 84, guardX, guardY, f.color);
+  arm(x + d * 12, top - 84, gx, gy, f.color);
+  glove(guardX, guardY);
+  glove(gx, gy);
+  if (f.weapon && f.weapon !== "none") drawWeapon(f.weapon, gx, gy, d);
+}
+</script>
+<script>
+/* Loncat, tubuh naik-turun, dan wasit kucing */
+function inAir(f, t) { return t < (f.airUntil || 0); }
+function jumpHeight(f, t) {
+  const p = (t - (f.jumpT || -9999)) / 550;
+  return p >= 0 && p < 1 ? Math.sin(p * Math.PI) * 52 : 0;
+}
+function jumpF(f) {
+  if (!f || over) return;
+  const t = performance.now();
+  if (inAir(f, t) || t < f.cdUntil) return;
+  f.jumpT = t;
+  f.airUntil = t + 550;
+  f.cdUntil = t + 200;
+  log(`${f.name} loncat!`);
+}
+
+const drawFighterGround = drawFighter;
+drawFighter = function (f, t) {
+  const h = jumpHeight(f, t);
+  if (h > 0) {
+    ctx.fillStyle = "rgba(0,0,0,.2)";
+    ctx.beginPath(); ctx.ellipse(f.x, GROUND + 3, 30 - h * 0.2, 5, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.save();
+  ctx.translate(0, -h);
+  drawFighterGround(f, t);
+  ctx.restore();
+}
+
+function drawReferee(t) {
+  const x = 240, y = GROUND;
+  const fur = "#9a9aa6";
+
+  ctx.fillStyle = "rgba(0,0,0,.25)";
+  ctx.beginPath(); ctx.ellipse(x, y + 3, 26, 6, 0, 0, Math.PI * 2); ctx.fill();
+
+  ctx.strokeStyle = fur;
+  ctx.lineWidth = 7;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x + 14, y - 12);
+  ctx.quadraticCurveTo(x + 46, y - 16, x + 40, y - 52);
+  ctx.stroke();
+
+  ctx.strokeStyle = "#1c1814";
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.moveTo(x - 9, y - 16); ctx.lineTo(x - 10, y - 4);
+  ctx.moveTo(x + 9, y - 16); ctx.lineTo(x + 10, y - 4);
+  ctx.stroke();
+
+  refBodyPath(x, y);
+  ctx.fillStyle = "#f4f4f6";
+  ctx.fill();
+  ctx.save();
+  ctx.clip();
+  ctx.fillStyle = "#1c1814";
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.ellipse(x, y - 78 + i * 18, 40, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Telinga kucing
+  ctx.fillStyle = fur;
+  ctx.beginPath();
+  ctx.moveTo(x - 17, y - 100); ctx.quadraticCurveTo(x - 20, y - 122, x - 16, y - 128); ctx.quadraticCurveTo(x - 6, y - 118, x - 1, y - 110);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x + 17, y - 100); ctx.quadraticCurveTo(x + 20, y - 122, x + 16, y - 128); ctx.quadraticCurveTo(x + 6, y - 118, x + 1, y - 110);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#f2a7b0";
+  ctx.beginPath();
+  ctx.moveTo(x - 12, y - 104); ctx.quadraticCurveTo(x - 14, y - 116, x - 12, y - 120); ctx.quadraticCurveTo(x - 7, y - 114, x - 5, y - 109);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x + 12, y - 104); ctx.quadraticCurveTo(x + 14, y - 116, x + 12, y - 120); ctx.quadraticCurveTo(x + 7, y - 114, x + 5, y - 109);
+  ctx.closePath(); ctx.fill();
+
+  // Kepala kucing
+  const hg = ctx.createRadialGradient(x - 4, y - 106, 2, x, y - 102, 19);
+  hg.addColorStop(0, "#b4b4bf");
+  hg.addColorStop(1, fur);
+  ctx.fillStyle = hg;
+  ctx.beginPath(); ctx.arc(x, y - 102, 18, 0, Math.PI * 2); ctx.fill();
+
+  // Garis dahi
+  ctx.strokeStyle = "#4a4a55";
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(x, y - 116); ctx.lineTo(x, y - 111);
+  ctx.moveTo(x - 4, y - 115); ctx.lineTo(x - 4, y - 110);
+  ctx.moveTo(x + 4, y - 115); ctx.lineTo(x + 4, y - 110);
+  ctx.stroke();
+
+  // Mata menyipit, mengejek
+  ctx.fillStyle = "#ffd54a";
+  ctx.beginPath(); ctx.ellipse(x - 6, y - 103, 4, 2.6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x + 6, y - 103, 4, 2.6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#111";
+  ctx.fillRect(x - 7, y - 104, 2, 3);
+  ctx.fillRect(x + 5, y - 104, 2, 3);
+  ctx.strokeStyle = "#2a2a33";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x - 11, y - 106); ctx.lineTo(x - 2, y - 105);
+  ctx.moveTo(x + 2, y - 105); ctx.lineTo(x + 11, y - 107);
+  ctx.stroke();
+
+  // Hidung dan mulut menyeringai
+  ctx.fillStyle = "#f2a7b0";
+  ctx.beginPath();
+  ctx.moveTo(x - 2.5, y - 96); ctx.lineTo(x + 2.5, y - 96); ctx.lineTo(x, y - 93);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = "#2a2a33";
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 92); ctx.quadraticCurveTo(x + 3, y - 89, x + 8, y - 94);
+  ctx.stroke();
+
+  // Kumis
+  ctx.strokeStyle = "#4a4a55";
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(x - 9, y - 95); ctx.lineTo(x - 22, y - 98);
+  ctx.moveTo(x - 9, y - 92); ctx.lineTo(x - 22, y - 91);
+  ctx.moveTo(x + 9, y - 95); ctx.lineTo(x + 22, y - 98);
+  ctx.moveTo(x + 9, y - 92); ctx.lineTo(x + 22, y - 91);
+  ctx.stroke();
+
+  const raised = over || t - refT < 700;
+  const ex = x + 26, ey = raised ? y - 120 : y - 64;
+  ctx.strokeStyle = fur;
+  ctx.lineWidth = 8;
+  ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(x + 16, y - 70); ctx.lineTo(ex, ey); ctx.stroke();
+  ctx.fillStyle = "#f2a7b0";
+  ctx.beginPath(); ctx.arc(ex, ey, 7, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = "rgba(255,255,255,.85)";
+  ctx.font = "bold 11px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(REF, x, y - 138);
+}
+</script>
+<script>
+/* Ultimate tiap karakter dan kemampuan pindah ke seberang lawan */
+const ULT_NAMES = {
+  "Bruno": "Banteng Ngamuk",
+  "NUNA": "Sundulan Jomblo",
+  "MICU": "Tamparan Gadis",
+  "GEHENA": "Tendangan Gacor",
+  "AMOR": "Jambakan TRIAL",
+  "SAPIER": "Sepak Pier",
+  "Vee": "Peluk Tampar Meledak",
+  "KOKO AYES": "JURUS BODO AMAT"
+};
+function ultName(f) { return ULT_NAMES[f.key || f.name] || "Ultimate"; }
+
+function dealDamage(a, d, dmg, kind) {
+  const t = performance.now();
+  if (over) return;
+  if (d.dodgeUntil > t || inAir(d, t)) { log(`${d.name} menghindar dari ${kind}!`); return; }
+  if (d.blockUntil > t) dmg *= 0.5;
+  d.hp = Math.max(0, d.hp - dmg);
+  d.hitT = t;
+  d.ult = Math.min(100, d.ult + 8);
+  a.ult = Math.min(100, a.ult + 6);
+  log(`${a.name} ${kind}! -${Math.round(dmg)} HP`);
+  hud();
+  if (d.hp <= 0) endFight("ko", a);
+}
+
+function ultimate(f) {
+  if (over || !f) return;
+  if (f.ult < 100) { log(`${f.name}: ultimate baru ${Math.floor(f.ult)}%`); return; }
+  const t = performance.now();
+  const d = f === P ? O : P;
+  const scale = (!twoP && f === O) ? LEVELS[level].dmg : 1;
+  f.ult = 0;
+  f.cdUntil = t + 400;
+  log(`${f.name} pakai ${ultName(f)}!`);
+  ultFx.push({ who: f, t, label: "⚡ " + ultName(f).toUpperCase() + "!", color: f.color });
+
+  switch (f.key || f.name) {
+    case "Bruno":
+    case "KOKO AYES": {
+      const s = Math.sign(d.x - f.x) || 1;
+      f.x = Math.max(XMIN, Math.min(XMAX, d.x - s * 50));
+      updateDirs();
+      f.punchT = t;
+      f.punchType = "hook";
+      const base = f.name === "Bruno" ? 30 : 26;
+      dealDamage(f, d, base * f.power * scale, "tinju ultimate");
+      break;
+    }
+    case "NUNA":
+      d.stunUntil = t + 4000;
+      log(`${d.name} terlilit kepang ${f.name}!`);
+      break;
+    case "MICU":
+      for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+          if (over || Math.abs(d.x - f.x) > RANGE + 60) return;
+          dealDamage(f, d, 4 * f.power * scale, "kombo kilat");
+        }, i * 220);
+      }
+      break;
+    case "GEHENA":
+      f.hp = Math.min(f.max, f.hp + 30);
+      f.boostUntil = t + 5000;
+      hud();
+      break;
+    case "SAPIER": {
+      const s = Math.sign(d.x - f.x) || 1;
+      f.x = Math.max(XMIN, Math.min(XMAX, d.x - s * 55));
+      updateDirs();
+      f.punchT = t;
+      f.punchType = "hook";
+      dealDamage(f, d, 30 * f.power * scale, "sepak pier");
+      break;
+    }
+    case "Vee": {
+      const s = Math.sign(d.x - f.x) || 1;
+      f.x = Math.max(XMIN, Math.min(XMAX, d.x - s * 46));
+      updateDirs();
+      f.punchT = t;
+      f.punchType = "jab";
+      d.stunUntil = t + 700;
+      log(`${f.name} memeluk ${d.name}...`);
+      setTimeout(() => { if (!over) dealDamage(f, d, 36 * f.power * scale, "tampar meledak"); }, 600);
+      break;
+    }
+    case "AMOR":
+      d.reverseUntil = t + 5000;
+      log(`${d.name} kena Jambakan TRIAL, gerakan terbalik!`);
+      break;
+  }
+  hud();
+}
+
+function updateUltLabels() {
+  [["P", P], ["O", O]].forEach(([who, f]) => {
+    document.querySelectorAll(`[data-p="${who}"][data-a="ult"]`).forEach(b => {
+      if (!f) { b.textContent = "Ultimate"; return; }
+      b.textContent = f.ult >= 100 ? `⚡ ${ultName(f)}` : `Ultimate ${Math.floor(f.ult)}%`;
+    });
+  });
+}
+</script>
+<script>
+/* Efek visual ultimate: cincin energi, kilatan layar, dan nama jurus besar */
+const ultFx = [];
+const drawBaseFx = draw;
+draw = function (t) {
+  drawBaseFx(t);
+  drawUltFx(t);
+};
+
+function drawUltFx(t) {
+  for (let i = ultFx.length - 1; i >= 0; i--) {
+    if (t - ultFx[i].t > 1800) ultFx.splice(i, 1);
+  }
+  ultFx.forEach(fx => {
+    const age = t - fx.t;
+    const p = age / 1800;
+    const f = fx.who;
+    ctx.save();
+
+    ctx.globalAlpha = Math.max(0, 1 - p);
+    ctx.strokeStyle = fx.color;
+    ctx.lineWidth = 6 * (1 - p) + 2;
+    ctx.beginPath();
+    ctx.arc(f.x, GROUND - 60, 30 + p * 90, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (age < 300) {
+      ctx.globalAlpha = (1 - age / 300) * 0.35;
+      ctx.fillStyle = fx.color;
+      ctx.fillRect(0, 0, CW, CH);
+    }
+
+    ctx.globalAlpha = age > 1300 ? (1800 - age) / 500 : 1;
+    const s = age < 250 ? 0.6 + (age / 250) * 0.5 : 1.1;
+    ctx.translate(CW / 2, 96);
+    ctx.scale(s, s);
+    ctx.font = "900 26px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = "rgba(0,0,0,.75)";
+    ctx.strokeText(fx.label, 0, 0);
+    ctx.fillStyle = "#ffe066";
+    ctx.fillText(fx.label, 0, 0);
+
+    ctx.restore();
+  });
+}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ===== Versi 3D (Three.js) + efek suara ===== */
+let USE3D = false;
+let renderer = null, scene3 = null, camera3 = null;
+let refMesh = null;
+const fighterMeshes = { P: null, O: null };
+const glCanvas = document.getElementById("gl");
+
+function part(geo, mat) {
+  const m = new THREE.Mesh(geo, mat);
+  m.castShadow = true;
+  return m;
+}
+function placeLimb(m, a, b) {
+  const dir = new THREE.Vector3().subVectors(b, a);
+  const len = dir.length();
+  m.position.copy(a).add(b).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+  m.scale.set(1, len, 1);
+}
+function emojiTexture(face, badge) {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d");
+  g.textAlign = "center";
+  g.textBaseline = "middle";
+  g.font = `96px ${FONT}`;
+  g.fillText(face, 64, 68);
+  if (badge) { g.font = `40px ${FONT}`; g.fillText(badge, 100, 28); }
+  return new THREE.CanvasTexture(c);
+}
+
+function crowdTexture() {
+  const c = document.createElement("canvas");
+  c.width = 512; c.height = 192;
+  const g = c.getContext("2d");
+  const bg = g.createLinearGradient(0, 0, 0, 192);
+  bg.addColorStop(0, "#2b2140");
+  bg.addColorStop(1, "#6a4450");
+  g.fillStyle = bg;
+  g.fillRect(0, 0, 512, 192);
+  g.fillStyle = "rgba(30,16,30,.7)";
+  for (let i = 0; i < 20; i++) {
+    const cx = 12 + i * 26, cy = 120 + (i % 3) * 6;
+    g.beginPath(); g.arc(cx, cy, 9, 0, Math.PI * 2); g.fill();
+    g.beginPath(); g.ellipse(cx, cy + 22, 14, 18, 0, Math.PI, Math.PI * 2); g.fill();
+  }
+  return new THREE.CanvasTexture(c);
+}
+
+function buildArena() {
+  const floor = new THREE.Mesh(
+    new THREE.BoxGeometry(26, 0.3, 8),
+    new THREE.MeshStandardMaterial({ color: 0x5b4336, roughness: 0.9 })
+  );
+  floor.position.set(0, -0.15, -0.5);
+  floor.receiveShadow = true;
+  scene3.add(floor);
+
+  const wall = new THREE.Mesh(
+    new THREE.PlaneGeometry(26, 9),
+    new THREE.MeshBasicMaterial({ map: crowdTexture() })
+  );
+  wall.position.set(0, 3.5, -4.2);
+  scene3.add(wall);
+
+  const postMat = new THREE.MeshStandardMaterial({ color: 0x2c2430, roughness: 0.5, metalness: 0.2 });
+  [-5.6, 5.6].forEach(x => {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 3.4, 16), postMat);
+    p.position.set(x, 1.7, -0.6);
+    scene3.add(p);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 12), postMat);
+    cap.position.set(x, 3.45, -0.6);
+    scene3.add(cap);
+  });
+  [[2.4, 0xe0463a], [1.9, 0xf4f1ea], [1.4, 0x3a8fd6]].forEach(([h, col]) => {
+    const curve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(-5.6, h, -0.6),
+      new THREE.Vector3(0, h - 0.25, -0.6),
+      new THREE.Vector3(5.6, h, -0.6)
+    );
+    const rope = new THREE.Mesh(
+      new THREE.TubeGeometry(curve, 40, 0.05, 8, false),
+      new THREE.MeshStandardMaterial({ color: col, roughness: 0.4 })
+    );
+    scene3.add(rope);
+  });
+}
+
+function buildWeapons(g) {
+  const holder = new THREE.Group();
+  const silver = new THREE.MeshStandardMaterial({ color: 0xdfe6ec, metalness: 0.6, roughness: 0.3 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x2b2b2b, roughness: 0.6 });
+  const wood = new THREE.MeshStandardMaterial({ color: 0x6b4a2b, roughness: 0.8 });
+
+  const pisau = new THREE.Group(); pisau.name = "pisau";
+  const pBlade = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.06, 0.12), silver); pBlade.position.x = 0.3;
+  const pHandle = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.12), dark);
+  pisau.add(pBlade, pHandle);
+
+  const pedang = new THREE.Group(); pedang.name = "pedang";
+  const sBlade = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.07, 0.1), silver); sBlade.position.x = 0.8;
+  const sGuard = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.25, 0.2), wood);
+  pedang.add(sBlade, sGuard);
+
+  const pistol = new THREE.Group(); pistol.name = "pistol";
+  const gBody = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.16), dark); gBody.position.x = 0.2;
+  const gGrip = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.3, 0.14), dark); gGrip.position.set(0, -0.2, 0);
+  pistol.add(gBody, gGrip);
+
+  const ketapel = new THREE.Group(); ketapel.name = "ketapel";
+  const fork = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.03, 6, 14, Math.PI), wood);
+  fork.rotation.z = Math.PI / 2; fork.position.x = -0.15;
+  ketapel.add(fork);
+
+  const batu = new THREE.Group(); batu.name = "batu";
+  const rock = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), new THREE.MeshStandardMaterial({ color: 0x8b7d6b, roughness: 0.9 }));
+  batu.add(rock);
+
+  holder.add(pisau, pedang, pistol, ketapel, batu);
+  g.add(holder);
+  return holder;
+}
+
+function makeFighter(f) {
+  const g = new THREE.Group();
+  const M = (c, r) => new THREE.MeshStandardMaterial({ color: c, roughness: r === undefined ? 0.6 : r });
+  const skin = M(0xe2aa7a), shirt = M(f.color, 0.5), shorts = M(0x1d1b24, 0.7), shoe = M(0x17171f, 0.4);
+  const glove = M(0xf5f1ea, 0.35), hairM = M(f.hairColor || 0x2b1d14), hair2 = M(f.hair2 || f.hairColor || 0x2b1d14);
+  const hoodM = M(f.hood2 || f.color, 0.7);
+
+  [0.2, -0.2].forEach(z => {
+    const leg = part(new THREE.CylinderGeometry(0.14, 0.11, 1.25, 12), skin);
+    leg.position.set(0, 0.62, z);
+    g.add(leg);
+    const sh = part(new THREE.SphereGeometry(0.2, 12, 8), shoe);
+    sh.scale.set(1.3, 0.6, 1.0);
+    sh.position.set(0.08, 0.08, z);
+    g.add(sh);
+  });
+
+  const pants = part(new THREE.SphereGeometry(0.5, 16, 12), shorts);
+  pants.scale.set(1, 0.6, 0.85);
+  pants.position.set(0, 1.28, 0);
+  g.add(pants);
+
+  const torso = part(new THREE.SphereGeometry(0.62, 18, 14), shirt);
+  torso.scale.set(0.8, 1.0, 0.6);
+  torso.position.set(0, 2.0, 0);
+  g.add(torso);
+
+  const neck = part(new THREE.CylinderGeometry(0.16, 0.18, 0.3, 12), skin);
+  neck.position.set(0, 2.55, 0);
+  g.add(neck);
+
+  const head = part(new THREE.SphereGeometry(0.42, 20, 16), skin);
+  head.position.set(0, 2.95, 0);
+  g.add(head);
+
+  const face = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.5, 0.5),
+    new THREE.MeshBasicMaterial({ map: emojiTexture(f.face, f.badge), transparent: true, depthWrite: false })
+  );
+  face.position.set(0, 2.95, 0.43);
+  g.add(face);
+
+  const headC = new THREE.Vector3(0, 2.95, 0);
+  if (f.hair === "kribo") {
+    for (let i = 0; i < 22; i++) {
+      const th = (i / 22) * Math.PI * 0.5, ph = i * 2.4;
+      const r = 0.42;
+      const b = part(new THREE.SphereGeometry(0.16, 10, 8), hairM);
+      b.position.set(Math.sin(th) * Math.cos(ph) * r, 2.95 + Math.cos(th) * r, Math.sin(th) * Math.sin(ph) * r);
+      g.add(b);
+    }
+  } else if (f.hair === "kribosebelah") {
+    [[-0.4, 0.1, 0], [-0.46, -0.12, 0.05], [-0.36, 0.3, 0], [-0.56, 0.08, -0.05], [-0.24, 0.46, 0], [-0.46, 0.28, 0.1]].forEach(([dx, dy, dz]) => {
+      const b = part(new THREE.SphereGeometry(0.17, 10, 8), hairM);
+      b.position.set(dx, 2.95 + dy, dz);
+      g.add(b);
+    });
+  } else if (f.hair === "lurus") {
+    const cap = part(new THREE.SphereGeometry(0.44, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), hairM);
+    cap.position.copy(headC);
+    g.add(cap);
+    const back = part(new THREE.SphereGeometry(0.46, 16, 12), hairM);
+    back.scale.set(1.0, 1.9, 0.55);
+    back.position.set(0, 2.55, -0.18);
+    g.add(back);
+    [-1, 1].forEach(sd => {
+      const st = part(new THREE.CylinderGeometry(0.07, 0.05, 1.0, 8), hairM);
+      st.position.set(sd * 0.43, 2.45, 0.08);
+      g.add(st);
+    });
+  } else if (f.hair === "spiky") {
+    for (let i = 0; i < 10; i++) {
+      const th = (i / 10) * Math.PI * 0.45, ph = i * 0.63 + 0.3;
+      const n = new THREE.Vector3(Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)).normalize();
+      const cone = part(new THREE.ConeGeometry(0.1, 0.45, 6), hairM);
+      cone.position.copy(headC).addScaledVector(n, 0.5);
+      cone.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), n);
+      g.add(cone);
+    }
+  } else if (f.hair === "braid") {
+    [1, -1].forEach(s => {
+      for (let i = 0; i < 9; i++) {
+        const b = part(new THREE.SphereGeometry(0.1, 10, 8), i % 2 ? hair2 : hairM);
+        b.position.set(-0.05, 2.75 - i * 0.14, s * 0.5);
+        g.add(b);
+      }
+    });
+  } else if (f.hair === "botak") {
+    const h = part(new THREE.SphereGeometry(0.44, 16, 8, 0, Math.PI, 0, Math.PI * 0.5), hairM);
+    h.position.copy(headC);
+    g.add(h);
+  } else {
+    const h = part(new THREE.SphereGeometry(0.44, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.45), hairM);
+    h.position.copy(headC);
+    g.add(h);
+  }
+
+  if (f.hood) {
+    const shell = part(new THREE.SphereGeometry(0.46, 18, 10, 0, Math.PI * 2, 0, Math.PI * 0.45), hoodM);
+    shell.position.copy(headC);
+    g.add(shell);
+    const shawl = part(new THREE.TorusGeometry(0.42, 0.1, 8, 20), hoodM);
+    shawl.rotation.x = Math.PI / 2;
+    shawl.position.set(0, 2.5, 0);
+    g.add(shawl);
+  }
+
+  const armF = part(new THREE.CylinderGeometry(0.11, 0.09, 1, 12), shirt);
+  const armR = part(new THREE.CylinderGeometry(0.11, 0.09, 1, 12), shirt);
+  const gF = part(new THREE.SphereGeometry(0.24, 16, 12), glove);
+  const gR = part(new THREE.SphereGeometry(0.24, 16, 12), glove);
+  g.add(armF, armR, gF, gR);
+  const weapons = buildWeapons(g);
+
+  g.scale.setScalar(f.tall || 1);
+  g.userData = { owner: f, shirt, torso, head, face, armF, armR, gF, gR, weapons };
+  return g;
+}
+
+function poseFighter(g, f, t) {
+  const u = g.userData;
+  const d = f.dir;
+  { const k = f.tall || 1; g.scale.set(d * k, k, k); }
+  const dodging = t < f.dodgeUntil;
+  g.position.x = (f.x - 240) / 40 + (dodging ? -d * 0.35 : 0);
+  const bob = f.hp <= 0 ? 0 : Math.sin(t / 380 + (f === P ? 0 : 1.7)) * 0.04;
+  g.position.y = jumpHeight(f, t) / 40 + bob;
+  g.rotation.z = f.hp <= 0 ? 1.4 : (dodging ? 0.2 : 0);
+  u.shirt.emissive.setHex(t - f.hitT < 150 ? 0x701010 : 0x000000);
+
+  const pt = t - f.punchT;
+  const dur = f.punchType === "hook" ? 280 : 180;
+  const blocking = t < f.blockUntil;
+  let gF = new THREE.Vector3(0.55, 2.55, 0.42);
+  const gR = blocking ? new THREE.Vector3(0.35, 2.85, -0.35) : new THREE.Vector3(0.4, 2.5, -0.42);
+  if (blocking) gF.set(0.3, 3.05, 0.4);
+  else if (pt >= 0 && pt < dur) {
+    const e = Math.sin((pt / dur) * Math.PI);
+    if (f.punchType === "hook") gF.set(0.55 + e * 0.7, 2.6 + e * 0.15, 0.42 + e * 0.35);
+    else gF.set(0.55 + e * 1.2, 2.6, 0.42);
+  }
+  placeLimb(u.armF, new THREE.Vector3(0, 2.35, 0.42), gF);
+  placeLimb(u.armR, new THREE.Vector3(0, 2.35, -0.42), gR);
+  u.gF.position.copy(gF);
+  u.gR.position.copy(gR);
+
+  u.weapons.position.copy(gF);
+  u.weapons.children.forEach(c => { c.visible = c.name === f.weapon; });
+  u.weapons.visible = !!f.weapon && f.weapon !== "none";
+}
+
+function buildRef() {
+  const g = new THREE.Group();
+  const sc = document.createElement("canvas");
+  sc.width = 256; sc.height = 128;
+  const sg = sc.getContext("2d");
+  for (let i = 0; i < 8; i++) { sg.fillStyle = i % 2 ? "#f4f4f6" : "#1c1814"; sg.fillRect(i * 32, 0, 32, 128); }
+  const stripe = new THREE.CanvasTexture(sc);
+  const body = part(new THREE.SphereGeometry(0.85, 24, 18), new THREE.MeshStandardMaterial({ map: stripe, roughness: 0.6 }));
+  body.scale.set(0.9, 1.1, 0.7);
+  body.position.set(0, 1.7, 0);
+  g.add(body);
+
+  const fur = new THREE.MeshStandardMaterial({ color: 0x9a9aa6, roughness: 0.7 });
+  const pink = new THREE.MeshStandardMaterial({ color: 0xf2a7b0, roughness: 0.6 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x2a2a33, roughness: 0.6 });
+  const head = part(new THREE.SphereGeometry(0.62, 24, 18), fur);
+  head.position.set(0, 3.2, 0);
+  g.add(head);
+
+  [1, -1].forEach(s => {
+    const ear = part(new THREE.ConeGeometry(0.22, 0.5, 3), fur);
+    ear.position.set(s * 0.32, 3.85, 0);
+    ear.rotation.z = -s * 0.25;
+    g.add(ear);
+    const inner = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.25, 3), pink);
+    inner.position.set(s * 0.32, 3.8, 0.1);
+    inner.rotation.z = -s * 0.25;
+    g.add(inner);
+
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 8), new THREE.MeshStandardMaterial({ color: 0xffd54a, emissive: 0x332200 }));
+    eye.scale.set(1, 0.5, 0.5);
+    eye.position.set(s * 0.24, 3.28, 0.56);
+    g.add(eye);
+    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 6), dark);
+    pupil.position.set(s * 0.24, 3.28, 0.64);
+    g.add(pupil);
+
+    for (let k = 0; k < 2; k++) {
+      const w = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 1, 4), dark);
+      placeLimb(w, new THREE.Vector3(s * 0.25, 3.05 + k * 0.06, 0.56), new THREE.Vector3(s * 0.8, 3.1 + k * 0.08, 0.5));
+      g.add(w);
+    }
+  });
+
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), pink);
+  nose.scale.set(1.2, 0.8, 0.8);
+  nose.position.set(0, 3.12, 0.62);
+  g.add(nose);
+  const mouth = new THREE.Mesh(
+    new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(-0.1, 3.0, 0.58), new THREE.Vector3(0.05, 2.92, 0.62), new THREE.Vector3(0.18, 3.03, 0.56)
+    ), 12, 0.02, 6, false), dark);
+  g.add(mouth);
+
+  [-0.2, 0.2].forEach(z => {
+    const leg = part(new THREE.CylinderGeometry(0.1, 0.1, 0.8, 10), dark);
+    leg.position.set(0, 0.4, z);
+    g.add(leg);
+  });
+
+  const tail = new THREE.Mesh(
+    new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(0.5, 0.5, -0.4), new THREE.Vector3(1.6, 0.6, -0.4), new THREE.Vector3(1.4, 1.9, -0.5)
+    ), 20, 0.07, 8, false), fur);
+  g.add(tail);
+
+  const arm = part(new THREE.CylinderGeometry(0.09, 0.09, 1, 10), fur);
+  const paw = part(new THREE.SphereGeometry(0.14, 12, 10), pink);
+  g.add(arm, paw);
+
+  const nc = document.createElement("canvas");
+  nc.width = 256; nc.height = 64;
+  const ng = nc.getContext("2d");
+  ng.fillStyle = "#ffffff";
+  ng.font = "bold 36px system-ui, sans-serif";
+  ng.textAlign = "center";
+  ng.fillText(REF, 128, 46);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(nc), transparent: true }));
+  sprite.position.set(0, 4.5, 0);
+  sprite.scale.set(2.2, 0.55, 1);
+  g.add(sprite);
+
+  g.userData = { arm, paw };
+  return g;
+}
+
+function poseRef(g, t) {
+  const raised = over || t - refT < 700;
+  const u = g.userData;
+  const end = raised ? new THREE.Vector3(1.0, 3.8, 0.3) : new THREE.Vector3(1.1, 1.9, 0.5);
+  placeLimb(u.arm, new THREE.Vector3(0.7, 2.4, 0.3), end);
+  u.paw.position.copy(end);
+}
+
+function init3D() {
+  renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(480, 260, false);
+  renderer.shadowMap.enabled = true;
+  scene3 = new THREE.Scene();
+  camera3 = new THREE.PerspectiveCamera(34, 480 / 260, 0.1, 100);
+  camera3.position.set(0, 3.4, 15.5);
+  camera3.lookAt(0, 1.9, 0);
+  scene3.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const key = new THREE.DirectionalLight(0xfff1dd, 1.0);
+  key.position.set(-4, 9, 8);
+  key.castShadow = true;
+  key.shadow.mapSize.set(1024, 1024);
+  Object.assign(key.shadow.camera, { left: -8, right: 8, top: 8, bottom: -2, near: 1, far: 40 });
+  scene3.add(key);
+  const rim = new THREE.DirectionalLight(0xff8f6b, 0.5);
+  rim.position.set(6, 4, -6);
+  scene3.add(rim);
+  buildArena();
+  refMesh = buildRef();
+  scene3.add(refMesh);
+}
+
+function render3D(t) {
+  [["P", P], ["O", O]].forEach(([k, f]) => {
+    if (!f) return;
+    const cur = fighterMeshes[k];
+    if (!cur || cur.userData.owner !== f) {
+      if (cur) scene3.remove(cur);
+      fighterMeshes[k] = makeFighter(f);
+      scene3.add(fighterMeshes[k]);
+    }
+    poseFighter(fighterMeshes[k], f, t);
+  });
+  poseRef(refMesh, t);
+  renderer.render(scene3, camera3);
+}
+
+/* ----- Suara (dibuat langsung dengan Web Audio, tanpa file) ----- */
+let AC = null, NB = null;
+function ac() {
+  if (!AC) {
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
+  }
+  if (AC.state === "suspended") AC.resume();
+  return AC;
+}
+function noiseBuf(a) {
+  if (!NB) {
+    NB = a.createBuffer(1, a.sampleRate * 0.5, a.sampleRate);
+    const d = NB.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  return NB;
+}
+function tone(f0, f1, dur, type, vol) {
+  const a = ac(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(f0, a.currentTime);
+  o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), a.currentTime + dur);
+  g.gain.setValueAtTime(vol, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + dur);
+  o.connect(g).connect(a.destination);
+  o.start(); o.stop(a.currentTime + dur);
+}
+function noise(dur, vol, filt, f0, f1) {
+  const a = ac(); if (!a) return;
+  const s = a.createBufferSource();
+  s.buffer = noiseBuf(a);
+  const fl = a.createBiquadFilter();
+  fl.type = filt;
+  fl.frequency.setValueAtTime(f0, a.currentTime);
+  fl.frequency.exponentialRampToValueAtTime(f1, a.currentTime + dur);
+  const g = a.createGain();
+  g.gain.setValueAtTime(vol, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, a.currentTime + dur);
+  s.connect(fl).connect(g).connect(a.destination);
+  s.start(); s.stop(a.currentTime + dur);
+}
+function sfx(name) {
+  switch (name) {
+    case "swing": noise(0.14, 0.25, "highpass", 1500, 4000); break;
+    case "hit": tone(140, 50, 0.2, "sine", 0.5); noise(0.08, 0.4, "lowpass", 2000, 400); break;
+    case "block": tone(900, 400, 0.12, "square", 0.12); noise(0.1, 0.25, "highpass", 3000, 6000); break;
+    case "whoosh": noise(0.3, 0.3, "bandpass", 400, 2500); break;
+    case "boing": tone(220, 640, 0.3, "sine", 0.3); break;
+    case "ult": tone(220, 880, 0.7, "sawtooth", 0.18); tone(330, 990, 0.7, "triangle", 0.15); noise(0.7, 0.2, "bandpass", 300, 3000); break;
+    case "bell": tone(880, 880, 1.2, "sine", 0.25); tone(1320, 1320, 1.0, "sine", 0.1); break;
+    case "whistle": tone(2400, 2200, 0.35, "sine", 0.2); break;
+    case "shot": noise(0.12, 0.6, "highpass", 800, 3000); tone(120, 40, 0.15, "sine", 0.5); break;
+    case "twang": tone(900, 200, 0.25, "triangle", 0.25); break;
+    case "throw": noise(0.15, 0.3, "lowpass", 1200, 300); break;
+    case "slash": noise(0.16, 0.3, "highpass", 2000, 6000); tone(700, 300, 0.15, "sine", 0.1); break;
+    case "click": tone(1200, 1200, 0.03, "square", 0.1); break;
+  }
+}
+
+/* Pasang suara ke aksi yang sudah ada */
+function weaponSfx(a, type) {
+  if (type === "jab") return "swing";
+  return { pisau: "slash", pedang: "slash", pistol: "shot", ketapel: "twang", batu: "throw" }[a.weapon] || "swing";
+}
+const attackBaseSfx = attack;
+attack = function (a, d, type) {
+  const t0 = performance.now();
+  const ready = t0 >= a.cdUntil && !over && !inAir(a, t0) && t0 >= (a.stunUntil || 0);
+  const hitBefore = d.hitT;
+  attackBaseSfx(a, d, type);
+  if (!ready) return;
+  if (d.hitT !== hitBefore) sfx(d.blockUntil > t0 ? "block" : "hit");
+  else if (d.dodgeUntil > t0 || inAir(d, t0)) sfx("whoosh");
+  else sfx(weaponSfx(a, type));
+};
+const tangkisBaseSfx = tangkis;
+tangkis = function (f) { const b = f.blockUntil; tangkisBaseSfx(f); if (f.blockUntil !== b) sfx("click"); };
+const hindarBaseSfx = hindar;
+hindar = function (f) { const b = f.dodgeUntil; hindarBaseSfx(f); if (f.dodgeUntil !== b) sfx("whoosh"); };
+const jumpBaseSfx = jumpF;
+jumpF = function (f) { const b = f.airUntil; jumpBaseSfx(f); if (f.airUntil !== b) sfx("boing"); };
+const ultBaseSfx = ultimate;
+ultimate = function (f) { const was = f.ult; ultBaseSfx(f); if (f.ult === 0 && was >= 100) sfx("ult"); };
+const dealBaseSfx = dealDamage;
+dealDamage = function (a, d, dmg, kind) { const h = d.hitT; dealBaseSfx(a, d, dmg, kind); if (d.hitT !== h) sfx("hit"); };
+const cycleBaseSfx = cycleWeapon;
+cycleWeapon = function (f) { cycleBaseSfx(f); sfx("click"); };
+const startBaseSfx = start;
+start = function (pi, oi) { startBaseSfx(pi, oi); sfx("whistle"); };
+const beginBaseSfx = beginMatch;
+beginMatch = function () { beginBaseSfx(); sfx("whistle"); };
+const endBaseSfx = endFight;
+endFight = function (how, w) { const was = over; endBaseSfx(how, w); if (!was) sfx("bell"); };
+const tickBaseSfx = tick;
+tick = function () { const r = round; tickBaseSfx(); if (round !== r && !over) sfx("bell"); };
+
+/* Gambar: 3D di belakang, lapisan 2D untuk teks dan efek */
+const draw2DFallback = draw;
+draw = function (t) {
+  if (!USE3D || !renderer) { draw2DFallback(t); return; }
+  render3D(t);
+  ctx.clearRect(0, 0, CW, CH);
+  drawShots(t);
+  drawBanner(t);
+  drawUltFx(t);
+};
+
+try {
+  init3D();
+} catch (e) {
+  USE3D = false;
+  console.warn("3D tidak bisa dimuat, memakai 2D:", e);
+}
+</script>
+<script>
+/* Kembali ke tampilan 2D, wasit dibuat lebih jauh di belakang */
+const drawRefFront = drawReferee;
+drawReferee = function (t) {
+  ctx.save();
+  ctx.translate(240, GROUND - 6);
+  ctx.scale(0.78, 0.78);
+  ctx.translate(-240, -(GROUND - 6));
+  drawRefFront(t);
+  ctx.restore();
+};
+</script>
+<script>
+/* Gerakan ultimate sesuai nama jurus */
+const ultAnims = [];
+
+const ultPrevAnim = ultimate;
+ultimate = function (f) {
+  const was = f.ult;
+  const opp = f === P ? O : P;
+  const fromF = f.x, fromO = opp.x;
+  ultPrevAnim(f);
+  if (!(f.ult === 0 && was >= 100)) return;
+  const t = performance.now();
+  switch (f.key || f.name) {
+    case "Bruno":
+    case "KOKO AYES":
+      f.slideFrom = fromF; f.slideT = t;
+      ultAnims.push({ type: (f.key || f.name) === "Bruno" ? "banteng" : "dash", who: f, target: opp, t, fromX: fromF });
+      break;
+    case "NUNA": {
+      const s = Math.sign(opp.x - f.x) || 1;
+      f.x = Math.max(XMIN, Math.min(XMAX, opp.x - s * 50));
+      updateDirs();
+      f.slideFrom = fromF; f.slideT = t;
+      ultAnims.push({ type: "sundul", who: f, target: opp, t, fromX: fromF });
+      break;
+    }
+    case "MICU":
+      for (let i = 0; i < 6; i++) ultAnims.push({ type: "tampar", who: f, target: opp, t: t + i * 220 });
+      break;
+    case "GEHENA":
+      ultAnims.push({ type: "tendang", who: f, target: opp, t });
+      break;
+    case "SAPIER":
+      f.slideFrom = fromF; f.slideT = t;
+      f.jumpT = t; f.airUntil = t + 550;
+      ultAnims.push({ type: "sepak", who: f, target: opp, t, fromX: fromF });
+      break;
+    case "Vee":
+      f.slideFrom = fromF; f.slideT = t;
+      ultAnims.push({ type: "peluk", who: f, target: opp, t, fromX: fromF });
+      break;
+    case "AMOR":
+      opp.slideFrom = fromO; opp.slideT = t;
+      opp.x = Math.max(XMIN, Math.min(XMAX, opp.x + (f.x - opp.x) * 0.35));
+      updateDirs();
+      ultAnims.push({ type: "jambak", who: f, target: opp, t });
+      break;
+  }
+};
+
+/* Geser petinju saat dash, sundul, atau dijambak */
+const drawFighterNoSlide = drawFighter;
+drawFighter = function (f, t) {
+  let sx = 0;
+  if (f.slideT && t - f.slideT < 260) sx = (f.slideFrom - f.x) * (1 - (t - f.slideT) / 260);
+  sx += ultOffset(f, t);
+  ctx.save();
+  ctx.translate(sx, 0);
+  drawFighterNoSlide(f, t);
+  ctx.restore();
+};
+
+function drawUltAnims(t) {
+  for (let i = ultAnims.length - 1; i >= 0; i--) {
+    if (t - ultAnims[i].t > 1500) ultAnims.splice(i, 1);
+  }
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ultAnims.forEach(ev => {
+    const age = t - ev.t;
+    if (age < 0) return;
+    const f = ev.who, tg = ev.target, d = f.dir;
+
+    if (ev.type === "tendang" && age < 360) {
+      const e = Math.sin((age / 360) * Math.PI);
+      const footX = f.x + d * (34 + e * 52), footY = GROUND - 40 - e * 26;
+      ctx.strokeStyle = "#e2aa7a";
+      ctx.lineWidth = 12;
+      ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(f.x + d * 2, GROUND - 38); ctx.lineTo(footX, footY); ctx.stroke();
+      ctx.fillStyle = "#17171f";
+      ctx.beginPath(); ctx.ellipse(footX + d * 6, footY, 11, 6, 0, 0, Math.PI * 2); ctx.fill();
+    }
+
+    if (ev.type === "tampar" && age < 170) {
+      const p = age / 170;
+      ctx.strokeStyle = f.color;
+      ctx.lineWidth = 9;
+      ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(f.x + d * 12, GROUND - 88); ctx.lineTo(tg.x - d * (14 - 10 * p), GROUND - 112); ctx.stroke();
+      ctx.font = `56px ${FONT}`;
+      ctx.fillText("✋", tg.x - d * (12 - 24 * p), GROUND - 112);
+      if (age < 120) { ctx.font = `44px ${FONT}`; ctx.fillText("💥", tg.x + d * 4, GROUND - 110); }
+    }
+
+    if (ev.type === "sundul") {
+      if (age < 260) {
+        const k = age / 260;
+        const fx = ev.fromX + (tg.x - d * 40 - ev.fromX) * k;
+        ctx.font = `44px ${FONT}`;
+        ctx.fillText(f.face, fx, GROUND - 118 - Math.sin(k * Math.PI) * 20);
+      }
+      if (age >= 200 && age < 480) { ctx.font = `60px ${FONT}`; ctx.fillText("💥", tg.x - d * 18, GROUND - 120); }
+      if (age < 800) { ctx.font = `26px ${FONT}`; ctx.fillText("💫", tg.x, GROUND - 158 + Math.sin(age / 80) * 4); }
+    }
+
+    if (ev.type === "jambak" && age < 700) {
+      const hx = tg.x, hy = GROUND - 120;
+      ctx.strokeStyle = f.color;
+      ctx.lineWidth = 9;
+      ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(f.x + d * 12, GROUND - 88); ctx.lineTo(hx, hy); ctx.stroke();
+      ctx.font = `26px ${FONT}`;
+      ctx.fillText("🖐", hx, hy - 6);
+    }
+
+    if (ev.type === "banteng") {
+      if (age < 700) {
+        const k = Math.min(1, age / 300);
+        const bx = ev.fromX + (tg.x - d * 46 - ev.fromX) * k;
+        if (age < 420) {
+          ctx.strokeStyle = "rgba(255,255,255,.75)";
+          ctx.lineWidth = 4;
+          ctx.lineCap = "round";
+          for (let i = 0; i < 5; i++) {
+            const ly = GROUND - 28 - i * 22;
+            ctx.beginPath(); ctx.moveTo(bx - d * (40 + i * 8), ly); ctx.lineTo(bx - d * (120 + i * 18), ly); ctx.stroke();
+          }
+          ctx.font = `34px ${FONT}`;
+          for (let i = 1; i <= 3; i++) { ctx.globalAlpha = 0.6 - i * 0.14; ctx.fillText("💨", bx - d * i * 36, GROUND - 14); }
+          ctx.globalAlpha = 1;
+          ctx.save();
+          ctx.translate(bx, GROUND - 64);
+          ctx.scale(d > 0 ? -1 : 1, 1);
+          ctx.font = `104px ${FONT}`;
+          ctx.fillText("🐂", 0, 0);
+          ctx.restore();
+        }
+        if (age >= 260) {
+          const p = (age - 260) / 440;
+          ctx.globalAlpha = 1 - p;
+          ctx.strokeStyle = "#ffd54a";
+          ctx.lineWidth = 8 * (1 - p) + 2;
+          ctx.beginPath(); ctx.arc(tg.x, GROUND - 60, 20 + p * 100, 0, Math.PI * 2); ctx.stroke();
+          ctx.globalAlpha = 1;
+          ctx.font = `${84 + Math.sin(p * Math.PI) * 30}px ${FONT}`;
+          ctx.fillText("💥", tg.x - d * 10, GROUND - 104);
+        }
+      }
+      if (age >= 300 && age < 1000) { ctx.font = `28px ${FONT}`; ctx.fillText("💫", tg.x, GROUND - 160 + Math.sin(age / 80) * 4); }
+    }
+
+    if (ev.type === "sepak") {
+      if (age < 560) {
+        const k = Math.min(1, age / 260);
+        const cx = f.x + (f.slideFrom - f.x) * (1 - k);
+        const h = jumpHeight(f, t);
+        const e = Math.sin(Math.min(1, age / 360) * Math.PI);
+        [-9, 9].forEach(o => {
+          const fx = cx + d * (30 + e * 46), fy = GROUND - 56 - h + o;
+          ctx.strokeStyle = "#e2aa7a";
+          ctx.lineWidth = 13;
+          ctx.lineCap = "round";
+          ctx.beginPath(); ctx.moveTo(cx + d * 2, GROUND - 44 - h + o * 0.5); ctx.lineTo(fx, fy); ctx.stroke();
+          ctx.fillStyle = "#17171f";
+          ctx.beginPath(); ctx.ellipse(fx + d * 7, fy, 12, 7, 0, 0, Math.PI * 2); ctx.fill();
+        });
+      }
+      if (age >= 200 && age < 480) { ctx.font = `64px ${FONT}`; ctx.fillText("💥", tg.x - d * 16, GROUND - 100); }
+      if (age < 800) { ctx.font = `26px ${FONT}`; ctx.fillText("💫", tg.x, GROUND - 158 + Math.sin(age / 80) * 4); }
+    }
+
+    if (ev.type === "peluk") {
+      if (age >= 200 && age < 640) {
+        const mx = (f.x + tg.x) / 2;
+        ctx.strokeStyle = f.color;
+        ctx.lineWidth = 9;
+        ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(f.x + d * 12, GROUND - 96); ctx.lineTo(tg.x - d * 6, GROUND - 100); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(f.x + d * 12, GROUND - 80); ctx.lineTo(tg.x - d * 6, GROUND - 76); ctx.stroke();
+        ctx.font = `30px ${FONT}`;
+        ctx.fillText("💞", mx, GROUND - 160 - ((age - 200) / 440) * 16);
+      }
+      if (age >= 520 && age < 700) {
+        const p = (age - 520) / 180;
+        ctx.strokeStyle = f.color;
+        ctx.lineWidth = 9;
+        ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(f.x + d * 12, GROUND - 88); ctx.lineTo(tg.x - d * (30 - 34 * p), GROUND - 114); ctx.stroke();
+        ctx.font = `60px ${FONT}`;
+        ctx.fillText("✋", tg.x - d * (30 - 34 * p), GROUND - 114);
+      }
+      if (age >= 640 && age < 1450) {
+        const p = (age - 640) / 810;
+        ctx.save();
+        ctx.globalAlpha = 0.55 * Math.max(0, 1 - p * 3);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, CW, CH);
+        ctx.restore();
+        for (let i = 0; i < 3; i++) {
+          const q = Math.max(0, p - i * 0.12);
+          ctx.globalAlpha = Math.max(0, 1 - q * 1.2);
+          ctx.strokeStyle = ["#ffd54a", "#ff7a3a", "#ffffff"][i];
+          ctx.lineWidth = 10 * (1 - q) + 2;
+          ctx.beginPath(); ctx.arc(tg.x, GROUND - 70, 20 + q * 190, 0, Math.PI * 2); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.font = `${150 + Math.sin(p * Math.PI) * 60}px ${FONT}`;
+        ctx.fillText("💥", tg.x, GROUND - 90);
+        ctx.font = `46px ${FONT}`;
+        [[-70, -40], [70, -30], [-40, -140], [50, -130]].forEach(([ox, oy], i) => {
+          ctx.fillText(i % 2 ? "🔥" : "✨", tg.x + ox * (0.6 + p), GROUND + oy - p * 20);
+        });
+      }
+      if (age >= 700 && age < 1500) { ctx.font = `28px ${FONT}`; ctx.fillText("💫", tg.x, GROUND - 160 + Math.sin(age / 80) * 4); }
+    }
+
+    if (ev.type === "dash") {
+      if (age < 260) {
+        const k = age / 260;
+        const bx = ev.fromX + (tg.x - d * 40 - ev.fromX) * k;
+        ctx.globalAlpha = 0.35;
+        ctx.font = `40px ${FONT}`;
+        ctx.fillText(f.face, ev.fromX + (bx - ev.fromX) * 0.5, GROUND - 118);
+        ctx.globalAlpha = 1;
+        ctx.font = `44px ${FONT}`;
+        ctx.fillText("🐂", bx, GROUND - 130);
+      }
+      if (age >= 200 && age < 480) { ctx.font = `60px ${FONT}`; ctx.fillText("💥", tg.x - d * 18, GROUND - 120); }
+    }
+    if (ev.type === "dash" && f.name === "KOKO AYES" && age < 800) {
+      ctx.font = `26px ${FONT}`;
+      ctx.fillText("🤷", f.x, GROUND - 150);
+    }
+  });
+  ctx.restore();
+}
+
+const drawBeforeAnim = draw;
+draw = function (t) {
+  drawBeforeAnim(t);
+  drawUltAnims(t);
+};
+</script>
+<script>
+/* Nama Bruno bisa diganti pemain */
+function applyBrunoName(f, src) {
+  if (!f || !src || src.name !== "TAR") return;
+  const v = (document.getElementById("brunoName").value || "").trim();
+  f.key = "Bruno";
+  f.name = v ? v.slice(0, 12) : "TAR";
+}
+</script>
+<script>
+/* Gerakan ultimate yang lebih terlihat, dan papan skor 1 vs 1 */
+function ultOffset(f, t) {
+  let dx = 0;
+  ultAnims.forEach(ev => {
+    const age = t - ev.t;
+    if (age < 0) return;
+    if (ev.who === f) {
+      if (ev.type === "tampar" && age < 170) dx += f.dir * 14 * Math.sin((age / 170) * Math.PI);
+      if (ev.type === "sundul" && age < 260) dx += f.dir * 22 * Math.sin((age / 260) * Math.PI);
+    }
+    if (ev.target === f) {
+      if (ev.type === "tampar" && age < 170) dx += (Math.random() - 0.5) * 10;
+      if (ev.type === "sundul" && age >= 200 && age < 480) dx += (Math.random() - 0.5) * 12;
+      if (ev.type === "dash" && age >= 200 && age < 480) dx += (Math.random() - 0.5) * 12;
+      if (ev.type === "banteng" && age >= 260 && age < 700) dx += (Math.random() - 0.5) * 22;
+      if (ev.type === "sepak" && age >= 200 && age < 480) dx += (Math.random() - 0.5) * 14;
+      if (ev.type === "peluk" && age >= 640 && age < 1200) dx += (Math.random() - 0.5) * 24;
+    }
+  });
+  return dx;
+}
+
+let matchLog = [];
+
+function renderBoard() {
+  const b = document.getElementById("board");
+  if (!b) return;
+  if (!twoP || !P || !O) { b.innerHTML = ""; $("pts").style.display = ""; return; }
+  $("pts").style.display = "none";
+  const dots = Array.from({ length: MATCHES }, (_, i) => {
+    const r = matchLog[i];
+    if (r === "P") return `<span style="color:${P.color}">●</span>`;
+    if (r === "O") return `<span style="color:${O.color}">●</span>`;
+    if (r === "-") return `<span style="color:var(--muted)">–</span>`;
+    return `<span style="color:var(--line)">○</span>`;
+  }).join(" ");
+  b.innerHTML =
+    `<div class="board-title">PAPAN SKOR · MATCH ${Math.min(matchNo, MATCHES)}/${MATCHES}</div>` +
+    `<div class="board-main">${P.name} <b>${P.pts}</b> : <b>${O.pts}</b> ${O.name}</div>` +
+    `<div class="board-dots">${dots}</div>`;
+}
+
+const hudBeforeBoard = hud;
+hud = function () {
+  hudBeforeBoard();
+  renderBoard();
+};
+
+const startBeforeBoard = start;
+start = function (pi, oi) {
+  matchLog = [];
+  startBeforeBoard(pi, oi);
+};
+
+const endBeforeBoard = endFight;
+endFight = function (how, w) {
+  const b0 = P ? P.pts : 0, b1 = O ? O.pts : 0;
+  const was = over;
+  endBeforeBoard(how, w);
+  if (!was && P && O) {
+    if (P.pts > b0) matchLog[matchNo - 1] = "P";
+    else if (O.pts > b1) matchLog[matchNo - 1] = "O";
+    else matchLog[matchNo - 1] = "-";
+    renderBoard();
+  }
+};
+</script>
+<script>
+/* Karakter tinggi (2D): skala dari titik kaki */
+const drawFighterBaseTall = drawFighter;
+drawFighter = function (f, t) {
+  const k = f.tall || 1;
+  if (k === 1) { drawFighterBaseTall(f, t); return; }
+  ctx.save();
+  ctx.translate(f.x, GROUND); ctx.scale(k, k); ctx.translate(-f.x, -GROUND);
+  drawFighterBaseTall(f, t);
+  ctx.restore();
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+/* ===== Mode online: room + kode room =====
+   WebRTC lewat PeerJS (perantara gratis), tanpa server sendiri.
+   Host menjalankan game penuh sebagai P1. Tamu mengirim tombol/analog, lalu menggambar snapshot dari host. */
+const NET = { active: false, role: null, peer: null, conn: null, code: "", myPick: -1, theirPick: -1, theirNm: "", lastRx: 0, ax: 0, k: 0 };
+const NET_ALPHA = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+const NET_BLOCK = new Set(["j", "l", "i", "o", "k", "u", "m", "n", "y"]);
+const DYN = ["x", "dir", "hp", "pts", "weapon", "ult", "punchType", "name", "key", "slideFrom"];
+const TK = ["punchT", "blockUntil", "dodgeUntil", "hitT", "airUntil", "jumpT", "stunUntil", "reverseUntil", "boostUntil", "slideT"];
+const isHost = () => NET.active && NET.role === "host";
+const isGuest = () => NET.active && NET.role === "guest";
+const netMsg = t => { $("netMsg").textContent = t; };
+function netSend(m) { try { if (NET.conn && NET.conn.open) NET.conn.send(m); } catch (e) {} }
+
+/* ---- pembungkus fungsi game ---- */
+const logPrev = log;
+log = function (m) { if (isGuest()) return; logPrev(m); if (isHost()) netSend({ t: "log", m }); };
+const sfxPrev = sfx;
+sfx = function (n) { if (isGuest()) return; sfxPrev(n); if (isHost()) netSend({ t: "sfx", n }); };
+const tickPrev = tick;
+tick = function () { if (!isGuest()) tickPrev(); };
+const movePrev = moveAll;
+moveAll = function () {
+  if (!isGuest()) return movePrev();
+  [P, O].forEach(f => {
+    if (f && f._tx !== undefined) { const d = f._tx - f.x; f.x = Math.abs(d) > 60 ? f._tx : f.x + d * 0.4; }
+  });
+};
+const pressPrev = press;
+press = function (who, type) {
+  if (!isGuest()) return pressPrev(who, type);
+  if (!over && P && O) netSend({ t: "in", a: type });
+};
+const cycPrev = cycleWeapon;
+cycleWeapon = function (f) {
+  if (isGuest()) { if (!over) netSend({ t: "in", a: "weapon" }); return; }
+  cycPrev(f);
+};
+const uwlPrev = updateWeaponLabels;
+updateWeaponLabels = function () {
+  if (!NET.active) return uwlPrev();
+  const f = isGuest() ? O : P;
+  document.querySelectorAll('[data-p="P"][data-a="weapon"]').forEach(b => {
+    b.textContent = "Senjata: " + WEAPONS[f ? f.weapon : "none"].label;
+  });
+};
+const uulPrev = updateUltLabels;
+updateUltLabels = function () {
+  if (!NET.active) return uulPrev();
+  const f = isGuest() ? O : P;
+  document.querySelectorAll('[data-p="P"][data-a="ult"]').forEach(b => {
+    b.textContent = !f ? "Ultimate" : f.ult >= 100 ? `⚡ ${ultName(f)}` : `Ultimate ${Math.floor(f.ult)}%`;
+  });
+};
+const toMenuOrig = toMenu;
+const alPrev = applyLayout;
+function netTweak() { if (!NET.active) return; $("fight").classList.remove("duo"); $("ctrlO").classList.add("hidden"); }
+applyLayout = function () { alPrev(); netTweak(); };
+window.addEventListener("resize", netTweak);
+function netLabels() {
+  if (!P || !O) return;
+  $("pn").textContent = P.face + " " + P.name + (isGuest() ? "" : " (kamu)");
+  $("on").textContent = O.face + " " + O.name + (isGuest() ? " (kamu)" : "");
+}
+const startPrev = start;
+start = function (pi, oi) { startPrev(pi, oi); if (NET.active) netLabels(); };
+const endPrev = endFight;
+endFight = function (how, w) {
+  const was = over;
+  endPrev(how, w);
+  if (isHost() && !was && over) {
+    netSend(netSnap());
+    netSend({ t: "over", ot: $("ot").textContent, os: $("os").textContent, nx: !$("next").classList.contains("hidden") });
+  }
+};
+/* efek ultimate dikirim ke tamu */
+[["fx", ultFx], ["an", ultAnims]].forEach(([k, arr]) => {
+  arr.raw = arr.push.bind(arr);
+  arr.push = (...evs) => {
+    if (isHost()) {
+      const n = performance.now();
+      evs.forEach(ev => netSend({ t: "ev", k, e: { ...ev, t: ev.t - n, who: ev.who === P ? "P" : "O", target: ev.target ? (ev.target === P ? "P" : "O") : undefined } }));
+    }
+    return arr.raw(...evs);
+  };
+});
+/* host tidak boleh memakai tombol keyboard P2 (itu milik tamu) */
+["keydown", "keyup"].forEach(ev => window.addEventListener(ev, e => {
+  if (NET.active && NET_BLOCK.has(e.key.toLowerCase()) && !$("fight").classList.contains("hidden")) e.stopImmediatePropagation();
+}, true));
+
+/* ---- snapshot: waktu dikirim relatif agar jam kedua perangkat tidak perlu sama ---- */
+function netSnap() {
+  const n = performance.now(), r1 = v => Math.round(v * 10) / 10;
+  const fz = f => {
+    const o = {};
+    DYN.forEach(k => { o[k] = typeof f[k] === "number" ? r1(f[k]) : f[k]; });
+    TK.forEach(k => { if (f[k] !== undefined) o[k] = Math.round(f[k] - n); });
+    o.shot = f.shot ? { t: Math.round(f.shot.t - n), col: f.shot.col } : null;
+    return o;
+  };
+  return { t: "s", P: fz(P), O: fz(O), r: round, tm: r1(time), ov: over, mn: matchNo, ml: matchLog, rf: Math.round(refT - n) };
+}
+function applySnap(s) {
+  if (!P || !O) return;
+  const n = performance.now(), mine = O, w0 = mine.weapon;
+  [[P, s.P], [O, s.O]].forEach(([f, d]) => {
+    DYN.forEach(k => { if (d[k] !== undefined && k !== "x") f[k] = d[k]; });
+    if (f._tx === undefined) f.x = d.x;
+    f._tx = d.x;
+    TK.forEach(k => { if (d[k] !== undefined) f[k] = d[k] + n; });
+    f.shot = d.shot ? { t: d.shot.t + n, col: d.shot.col } : null;
+  });
+  round = s.r; time = s.tm; over = s.ov; matchNo = s.mn; matchLog = s.ml; refT = s.rf + n;
+  if (!over) $("over").classList.add("hidden");
+  hud();
+  netLabels();
+  if (mine.weapon !== w0) updateWeaponLabels();
+}
+
+/* ---- antarmuka lobi ---- */
+function netUI(s) {
+  const off = s === "off", lobby = s === "home" || s === "wait";
+  document.querySelector(".modes").classList.toggle("hidden", !off);
+  $("btnOnline").classList.toggle("hidden", !off);
+  if (!off) $("lvlRow").classList.add("hidden");
+  $("netBox").classList.toggle("hidden", off);
+  $("netHome").classList.toggle("hidden", s !== "home");
+  $("netWait").classList.toggle("hidden", s !== "wait");
+  $("roster").classList.toggle("hidden", lobby);
+  $("pick").classList.toggle("hidden", lobby);
+}
+function netClose(notify) {
+  if (notify) netSend({ t: "bye" });
+  ["snapTimer", "axTimer", "watch"].forEach(k => clearInterval(NET[k]));
+  clearTimeout(NET.joinT);
+  const c = NET.conn, p = NET.peer;
+  setTimeout(() => { try { c && c.close(); } catch (e) {} try { p && p.destroy(); } catch (e) {} }, notify ? 250 : 0);
+  Object.assign(NET, { active: false, role: null, peer: null, conn: null, myPick: -1, theirPick: -1 });
+}
+function netExit(notify, msg) {
+  const inFight = !$("fight").classList.contains("hidden");
+  netClose(notify);
+  if (inFight) toMenuOrig();
+  twoP = false;
+  netUI("off");
+  setMode(1);
+  if (msg) $("pick").textContent = msg;
+}
+function netGone(msg) { if (NET.active) netExit(false, msg); }
+function netPeerErr(e) {
+  if (NET.conn && NET.conn.open) return;
+  const tp = e && e.type;
+  const msg = tp === "peer-unavailable" ? "Room tidak ditemukan. Cek lagi kodenya."
+    : tp === "timeout" ? "Tidak bisa tersambung. Jaringan salah satu pihak mungkin memblokir koneksi langsung, coba pindah WiFi atau data."
+    : ["network", "server-error", "socket-error", "socket-closed"].includes(tp) ? "Server perantara tidak terjangkau. Cek internet."
+    : "Gagal tersambung (" + tp + ").";
+  netClose(false);
+  netUI("home");
+  netMsg(msg);
+}
+function netBind(c) {
+  NET.conn = c;
+  c.on("open", () => {
+    clearTimeout(NET.joinT);
+    NET.lastRx = performance.now();
+    NET.watch = setInterval(() => {
+      netSend({ t: "ping" });
+      if (performance.now() - NET.lastRx > 15000) netGone("Koneksi terputus.");
+    }, 1000);
+    netUI("pick");
+    $("pick").textContent = "Terhubung! Pilih petinjumu.";
+    netMsg("Room " + NET.code + " · " + (isHost() ? "lawan sudah masuk." : "terhubung ke host."));
+  });
+  c.on("data", m => { try { onMsg(m); } catch (e) { console.warn(e); } });
+  c.on("close", () => netGone("Lawan terputus."));
+  c.on("error", () => netGone("Koneksi bermasalah."));
+}
+function hostRoom() {
+  if (typeof Peer === "undefined") { netMsg("Library online gagal dimuat. Cek internet lalu muat ulang halaman."); return; }
+  netClose(false);
+  NET.active = true; NET.role = "host";
+  NET.code = Array.from({ length: 5 }, () => NET_ALPHA[Math.floor(Math.random() * NET_ALPHA.length)]).join("");
+  netMsg("Membuat room...");
+  const p = NET.peer = new Peer("pekun-" + NET.code);
+  p.on("open", () => {
+    $("netCodeShow").textContent = NET.code;
+    netUI("wait");
+    netMsg("Menunggu temanmu masuk. Kirim kode di atas ke dia.");
+  });
+  p.on("connection", c => {
+    if (NET.conn) { c.on("open", () => c.close()); return; }
+    netBind(c);
+  });
+  p.on("disconnected", () => { if (NET.peer === p && !p.destroyed) p.reconnect(); });
+  p.on("error", e => { if (e.type === "unavailable-id") hostRoom(); else netPeerErr(e); });
+}
+function joinRoom() {
+  const code = $("netCode").value.trim().toUpperCase();
+  if (code.length !== 5) { netMsg("Kode room terdiri dari 5 huruf/angka."); return; }
+  if (typeof Peer === "undefined") { netMsg("Library online gagal dimuat. Cek internet lalu muat ulang halaman."); return; }
+  netClose(false);
+  NET.active = true; NET.role = "guest"; NET.code = code;
+  netMsg("Menyambung ke room " + code + "...");
+  const p = NET.peer = new Peer();
+  p.on("open", () => {
+    netBind(p.connect("pekun-" + code, { reliable: true, serialization: "json" }));
+    NET.joinT = setTimeout(() => { if (!(NET.conn && NET.conn.open)) netPeerErr({ type: "timeout" }); }, 15000);
+  });
+  p.on("error", netPeerErr);
+}
+
+/* ---- pilih petinju, mulai, dan pesan jaringan ---- */
+const pickPrev = pick;
+pick = function (i) {
+  if (!NET.active) return pickPrev(i);
+  if (!NET.conn || !NET.conn.open) return;
+  NET.myPick = i;
+  netSend({ t: "pick", i, nm: ($("brunoName").value || "").trim().slice(0, 12) });
+  document.querySelectorAll("#roster .card").forEach(c => { c.style.borderColor = +c.dataset.i === i ? "var(--accent)" : ""; });
+  netMsg("Kamu memilih " + F[i].name + ". Menunggu lawan memilih...");
+  if (isHost()) netMaybeStart();
+};
+function netMaybeStart() {
+  if (NET.myPick < 0 || NET.theirPick < 0) return;
+  const pi = NET.myPick, oi = NET.theirPick, nm = NET.theirNm;
+  NET.myPick = NET.theirPick = -1;
+  twoP = true;
+  netSend({ t: "start", pi, oi });
+  start(pi, oi);
+  if (F[oi].name === "TAR") { O.key = "Bruno"; O.name = nm || "TAR"; hud(); netLabels(); }
+  clearInterval(NET.snapTimer);
+  NET.snapTimer = setInterval(() => { if (P && O) netSend(netSnap()); }, 40);
+}
+function onMsg(m) {
+  NET.lastRx = performance.now();
+  switch (m.t) {
+    case "pick":
+      NET.theirPick = m.i; NET.theirNm = m.nm || "";
+      if (NET.myPick < 0) netMsg("Lawan sudah memilih. Giliranmu pilih petinju!");
+      if (isHost()) netMaybeStart();
+      break;
+    case "start":
+      if (!isGuest()) break;
+      NET.myPick = NET.theirPick = -1; NET.ax = 0;
+      twoP = true;
+      start(m.pi, m.oi);
+      clearInterval(NET.axTimer);
+      NET.axTimer = setInterval(() => {
+        if (!P) return;
+        const v = Math.round(P.ax * 100) / 100;
+        if (v !== NET.ax || ++NET.k % 12 === 0) { NET.ax = v; netSend({ t: "ax", v }); }
+      }, 40);
+      break;
+    case "s": if (isGuest()) applySnap(m); break;
+    case "log": if (isGuest()) logPrev(m.m); break;
+    case "sfx": if (isGuest()) sfxPrev(m.n); break;
+    case "ev":
+      if (isGuest() && P && O) {
+        const e = m.e;
+        e.t += performance.now();
+        if (e.who) e.who = e.who === "P" ? P : O;
+        if (e.target) e.target = e.target === "P" ? P : O;
+        (m.k === "fx" ? ultFx : ultAnims).raw(e);
+      }
+      break;
+    case "over":
+      if (isGuest()) {
+        over = true;
+        $("ot").textContent = m.ot; $("os").textContent = m.os;
+        $("next").classList.toggle("hidden", !m.nx);
+        $("over").classList.remove("hidden");
+      }
+      break;
+    case "in": if (isHost() && P && O && !over) pressPrev("O", m.a); break;
+    case "ax": if (isHost() && O) O.ax = +m.v || 0; break;
+    case "next": if (isHost() && over && !$("next").classList.contains("hidden")) $("next").onclick(); break;
+    case "bye": netGone("Lawan keluar dari room."); break;
+  }
+}
+
+/* ---- tombol ---- */
+$("btnOnline").onclick = () => { netUI("home"); netMsg(""); };
+$("netHost").onclick = hostRoom;
+$("netJoin").onclick = joinRoom;
+$("netCode").addEventListener("keydown", e => { if (e.key === "Enter") joinRoom(); });
+$("netCancel").onclick = () => netExit(true);
+$("netCopy").onclick = () => {
+  const done = () => netMsg("Kode disalin."), fail = () => netMsg("Salin manual: " + NET.code);
+  if (navigator.clipboard) navigator.clipboard.writeText(NET.code).then(done, fail); else fail();
+};
+$("next").onclick = () => {
+  if (isGuest()) { netSend({ t: "next" }); $("os").textContent = "Menunggu host melanjutkan..."; return; }
+  matchNo++; $("over").classList.add("hidden"); beginMatch();
+};
+$("quit").onclick = $("again").onclick = () => { if (NET.active) netExit(true); else toMenuOrig(); };
+window.addEventListener("pagehide", () => { if (NET.active) netSend({ t: "bye" }); });
+</script>
+
+</body>
+</html>
