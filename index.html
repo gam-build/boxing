@@ -2619,12 +2619,18 @@ drawFighter = function (f, t) {
   ctx.restore();
 };
 </script>
+<script src="https://cdn.jsdelivr.net/npm/mqtt@4.3.7/dist/mqtt.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
 /* ===== Mode online: room + kode room =====
    WebRTC lewat PeerJS (perantara gratis), tanpa server sendiri.
    Host menjalankan game penuh sebagai P1. Tamu mengirim tombol/analog, lalu menggambar snapshot dari host. */
 const NET = { active: false, role: null, peer: null, conn: null, code: "", myPick: -1, theirPick: -1, theirNm: "", lastRx: 0, ax: 0, k: 0 };
+const NET_ICE = { config: { iceServers: [
+  { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302", "stun:global.stun.twilio.com:3478"] },
+  { urls: ["turn:eu-0.turn.peerjs.com:3478", "turn:us-0.turn.peerjs.com:3478"], username: "peerjs", credential: "peerjsp" },
+  { urls: ["turn:openrelay.metered.ca:80", "turn:openrelay.metered.ca:443", "turn:openrelay.metered.ca:443?transport=tcp", "turns:openrelay.metered.ca:443?transport=tcp"], username: "openrelayproject", credential: "openrelayproject" }
+], sdpSemantics: "unified-plan" } };
 const NET_ALPHA = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const NET_BLOCK = new Set(["j", "l", "i", "o", "k", "u", "m", "n", "y"]);
 const DYN = ["x", "dir", "hp", "pts", "weapon", "ult", "punchType", "name", "key", "slideFrom"];
@@ -2756,9 +2762,9 @@ function netClose(notify) {
   if (notify) netSend({ t: "bye" });
   ["snapTimer", "axTimer", "watch"].forEach(k => clearInterval(NET[k]));
   clearTimeout(NET.joinT);
-  const c = NET.conn, p = NET.peer;
-  setTimeout(() => { try { c && c.close(); } catch (e) {} try { p && p.destroy(); } catch (e) {} }, notify ? 250 : 0);
-  Object.assign(NET, { active: false, role: null, peer: null, conn: null, myPick: -1, theirPick: -1 });
+  const c = NET.conn, p = NET.peer, rc = NET.rc;
+  setTimeout(() => { try { c && c.close(); } catch (e) {} try { p && p.destroy(); } catch (e) {} try { rc && rc.close(); } catch (e) {} }, notify ? 250 : 0);
+  Object.assign(NET, { active: false, role: null, peer: null, conn: null, rc: null, myPick: -1, theirPick: -1 });
 }
 function netExit(notify, msg) {
   const inFight = !$("fight").classList.contains("hidden");
@@ -2774,62 +2780,152 @@ function netPeerErr(e) {
   if (NET.conn && NET.conn.open) return;
   const tp = e && e.type;
   const msg = tp === "peer-unavailable" ? "Room tidak ditemukan. Cek lagi kodenya."
-    : tp === "timeout" ? "Tidak bisa tersambung. Jaringan salah satu pihak mungkin memblokir koneksi langsung, coba pindah WiFi atau data."
+    : tp === "timeout" ? "Tidak bisa tersambung (status: " + e.st + "). Pastikan host masih di layar kode room dengan layar menyala, lalu coba lagi atau pindah WiFi/data."
     : ["network", "server-error", "socket-error", "socket-closed"].includes(tp) ? "Server perantara tidak terjangkau. Cek internet."
     : "Gagal tersambung (" + tp + ").";
   netClose(false);
   netUI("home");
   netMsg(msg);
 }
+/* ---- jalur cadangan: relay lewat broker MQTT publik gratis (dipakai kalau koneksi langsung gagal) ---- */
+const NET_RELAYS = ["wss://broker.hivemq.com:8884/mqtt", "wss://broker.emqx.io:8084/mqtt"];
+function makeRelayConn(role, code) {
+  const ev = {}, host = role === "host", base = "pekun26/" + code + "/";
+  const inT = base + (host ? "g" : "h"), outT = base + (host ? "h" : "g");
+  const c = {
+    open: false, relay: true, dead: false, cl: null, all: [], guest: null, sid: Math.random().toString(36).slice(2, 8),
+    on(k, f) { ev[k] = f; },
+    send(m) { if (c.open && c.cl) c.cl.publish(outT, JSON.stringify(host ? m : { ...m, _s: c.sid })); },
+    close() { c.dead = true; c.open = false; c.all.forEach(x => { try { x.end(true); } catch (e) {} }); c.all = []; }
+  };
+  const fire = (k, a) => { if (ev[k]) ev[k](a); };
+  const handle = (cl, m) => {
+    if (host) {
+      if (!c.open && m.t === "hello") {
+        c.cl = cl; c.guest = m._s; c.open = true;
+        cl.publish(outT, JSON.stringify({ t: "welcome" }));
+        c.all.filter(x => x !== cl).forEach(x => { try { x.end(true); } catch (e) {} });
+        fire("open");
+      } else if (c.open && cl === c.cl && m._s === c.guest) fire("data", m);
+    } else if (m.t === "welcome" && !c.open) { c.cl = cl; c.open = true; fire("open"); }
+    else if (c.open && cl === c.cl) fire("data", m);
+  };
+  const connect = (url, onReady) => {
+    const cl = mqtt.connect(url, { reconnectPeriod: 0, connectTimeout: 6000, keepalive: 30 });
+    c.all.push(cl);
+    cl.on("connect", () => cl.subscribe(inT, err => { if (!err) onReady(cl); }));
+    cl.on("message", (tp, buf) => { try { handle(cl, JSON.parse(buf.toString())); } catch (e) {} });
+    cl.on("error", () => {});
+    cl.on("close", () => { if (c.open && cl === c.cl) fire("close"); });
+    return cl;
+  };
+  if (host) NET_RELAYS.forEach(u => connect(u, () => {}));
+  else {
+    let i = 0;
+    const attempt = () => {
+      if (c.dead || c.open) return;
+      if (i >= NET_RELAYS.length) { fire("error"); return; }
+      let moved = false, iv = null, n = 0;
+      const go = () => { if (moved) return; moved = true; clearInterval(iv); try { cl.end(true); } catch (e) {} attempt(); };
+      const cl = connect(NET_RELAYS[i++], () => {
+        iv = setInterval(() => {
+          if (c.dead || c.open) { clearInterval(iv); return; }
+          if (++n > 6) { go(); return; }
+          cl.publish(outT, JSON.stringify({ t: "hello", _s: c.sid }));
+        }, 1000);
+      });
+      cl.on("close", () => { if (!c.open) go(); });
+      setTimeout(() => { if (!cl.connected && !c.open) go(); }, 7000);
+    };
+    attempt();
+  }
+  return c;
+}
 function netBind(c) {
   NET.conn = c;
-  c.on("open", () => {
+  const onOpen = () => {
+    if (NET.conn !== c) return;
     clearTimeout(NET.joinT);
+    if (NET.rc && NET.rc !== c) { try { NET.rc.close(); } catch (e) {} NET.rc = null; }
     NET.lastRx = performance.now();
+    clearInterval(NET.watch);
     NET.watch = setInterval(() => {
       netSend({ t: "ping" });
       if (performance.now() - NET.lastRx > 15000) netGone("Koneksi terputus.");
     }, 1000);
     netUI("pick");
     $("pick").textContent = "Terhubung! Pilih petinjumu.";
-    netMsg("Room " + NET.code + " · " + (isHost() ? "lawan sudah masuk." : "terhubung ke host."));
-  });
-  c.on("data", m => { try { onMsg(m); } catch (e) { console.warn(e); } });
-  c.on("close", () => netGone("Lawan terputus."));
-  c.on("error", () => netGone("Koneksi bermasalah."));
+    netMsg("Room " + NET.code + " · " + (isHost() ? "lawan sudah masuk" : "terhubung ke host") + (c.relay ? " (jalur relay, delay sedikit lebih besar)." : "."));
+  };
+  c.on("open", onOpen);
+  if (c.open) onOpen();
+  c.on("data", m => { if (NET.conn !== c) return; try { onMsg(m); } catch (e) { console.warn(e); } });
+  c.on("close", () => { if (NET.conn === c) netGone("Lawan terputus."); });
+  c.on("error", () => { if (NET.conn === c) netGone("Koneksi bermasalah."); });
 }
 function hostRoom() {
-  if (typeof Peer === "undefined") { netMsg("Library online gagal dimuat. Cek internet lalu muat ulang halaman."); return; }
+  if (typeof Peer === "undefined" && typeof mqtt === "undefined") { netMsg("Library online gagal dimuat. Cek internet lalu muat ulang halaman."); return; }
   netClose(false);
   NET.active = true; NET.role = "host";
   NET.code = Array.from({ length: 5 }, () => NET_ALPHA[Math.floor(Math.random() * NET_ALPHA.length)]).join("");
   netMsg("Membuat room...");
-  const p = NET.peer = new Peer("pekun-" + NET.code);
-  p.on("open", () => {
-    $("netCodeShow").textContent = NET.code;
-    netUI("wait");
-    netMsg("Menunggu temanmu masuk. Kirim kode di atas ke dia.");
-  });
+  const showCode = txt => { $("netCodeShow").textContent = NET.code; netUI("wait"); netMsg(txt); };
+  if (typeof mqtt !== "undefined") {
+    const rc = NET.rc = makeRelayConn("host", NET.code);
+    rc.on("open", () => {
+      if (!NET.active || NET.rc !== rc) return;
+      if (NET.conn && NET.conn.open) { rc.close(); return; }
+      if (NET.conn) { const old = NET.conn; NET.conn = null; try { old.close(); } catch (e) {} }
+      netBind(rc);
+    });
+  }
+  if (typeof Peer === "undefined") { showCode("Menunggu temanmu masuk (jalur relay)."); return; }
+  const p = NET.peer = new Peer("pekun-" + NET.code, NET_ICE);
+  p.on("open", () => showCode("Menunggu temanmu masuk. Kirim kode di atas ke dia."));
   p.on("connection", c => {
     if (NET.conn) { c.on("open", () => c.close()); return; }
     netBind(c);
   });
   p.on("disconnected", () => { if (NET.peer === p && !p.destroyed) p.reconnect(); });
-  p.on("error", e => { if (e.type === "unavailable-id") hostRoom(); else netPeerErr(e); });
+  p.on("error", e => {
+    if (e.type === "unavailable-id") hostRoom();
+    else if (NET.conn && NET.conn.open) return;
+    else if (NET.rc) showCode("Menunggu temanmu masuk (jalur relay).");
+    else netPeerErr(e);
+  });
+}
+function guestRelay(code) {
+  if (typeof mqtt === "undefined") { netClose(false); netUI("home"); netMsg("Tidak bisa tersambung langsung. Coba pindah WiFi atau data."); return; }
+  netMsg("Jalur langsung gagal, mencoba jalur cadangan (relay)...");
+  const rc = NET.rc = makeRelayConn("guest", code);
+  rc.on("open", () => { if (NET.active && NET.rc === rc) netBind(rc); });
+  rc.on("error", () => {
+    if (!NET.active || NET.rc !== rc || NET.conn) return;
+    netClose(false); netUI("home");
+    netMsg("Room tidak ditemukan atau host sudah menutupnya. Pastikan host masih di layar kode room.");
+  });
 }
 function joinRoom() {
   const code = $("netCode").value.trim().toUpperCase();
   if (code.length !== 5) { netMsg("Kode room terdiri dari 5 huruf/angka."); return; }
-  if (typeof Peer === "undefined") { netMsg("Library online gagal dimuat. Cek internet lalu muat ulang halaman."); return; }
+  if (typeof Peer === "undefined" && typeof mqtt === "undefined") { netMsg("Library online gagal dimuat. Cek internet lalu muat ulang halaman."); return; }
   netClose(false);
   NET.active = true; NET.role = "guest"; NET.code = code;
   netMsg("Menyambung ke room " + code + "...");
-  const p = NET.peer = new Peer();
+  if (typeof Peer === "undefined") { guestRelay(code); return; }
+  const p = NET.peer = new Peer(undefined, NET_ICE);
+  const fallback = () => {
+    if (!NET.active || NET.peer !== p || (NET.conn && NET.conn.open)) return;
+    clearTimeout(NET.joinT);
+    NET.peer = null; NET.conn = null;
+    try { p.destroy(); } catch (e) {}
+    guestRelay(code);
+  };
   p.on("open", () => {
     netBind(p.connect("pekun-" + code, { reliable: true, serialization: "json" }));
-    NET.joinT = setTimeout(() => { if (!(NET.conn && NET.conn.open)) netPeerErr({ type: "timeout" }); }, 15000);
+    NET.joinT = setTimeout(fallback, 8000);
   });
-  p.on("error", netPeerErr);
+  p.on("error", fallback);
 }
 
 /* ---- pilih petinju, mulai, dan pesan jaringan ---- */
@@ -2852,7 +2948,7 @@ function netMaybeStart() {
   start(pi, oi);
   if (F[oi].name === "TAR") { O.key = "Bruno"; O.name = nm || "TAR"; hud(); netLabels(); }
   clearInterval(NET.snapTimer);
-  NET.snapTimer = setInterval(() => { if (P && O) netSend(netSnap()); }, 40);
+  NET.snapTimer = setInterval(() => { if (P && O) netSend(netSnap()); }, NET.conn && NET.conn.relay ? 60 : 40);
 }
 function onMsg(m) {
   NET.lastRx = performance.now();
