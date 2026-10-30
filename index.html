@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Boxing PEKUN</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%B1%3C/text%3E%3C/svg%3E">
 <style>
@@ -116,6 +116,10 @@ canvas{width:100%;height:auto;display:block;border-radius:16px}
 #fight.stage:not(.duo) #ctrlP .stick{width:140px;height:140px}
 #fight.stage:not(.duo) #ctrlP .stick .knob{width:56px;height:56px;margin:-28px 0 0 -28px}
 #fight.stage:not(.duo) #ctrlP .btn{padding:16px 4px;font-size:15px}
+/* Cegah zoom tidak sengaja (cubit, ketuk dua kali) */
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
+#fight,#fight *{touch-action:none;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+input{font-size:16px}
 </style>
 </head>
 <body>
@@ -144,7 +148,7 @@ canvas{width:100%;height:auto;display:block;border-radius:16px}
       </div>
       <p class="sub" id="netMsg"></p>
       <button class="btn alt" id="netCancel">Batal / keluar room</button>
-      <p class="sub" style="opacity:.6;font-size:11px">versi online v10 (ada jalur relay)</p>
+      <p class="sub" style="opacity:.6;font-size:11px">versi online v11 (ada jalur relay)</p>
     </div>
     <div id="lvlRow"><p class="sub">Level bot</p><div class="modes4" id="levels"></div></div>
     <p class="sub" id="pick"></p>
@@ -2619,6 +2623,12 @@ drawFighter = function (f, t) {
   drawFighterBaseTall(f, t);
   ctx.restore();
 };
+</script>
+<script>
+/* iOS Safari mengabaikan user-scalable=no, jadi gestur zoom diblokir manual */
+["gesturestart", "gesturechange", "gestureend"].forEach(ev => document.addEventListener(ev, e => e.preventDefault()));
+let lastTouchEnd = 0;
+document.addEventListener("touchend", e => { const n = Date.now(); if (n - lastTouchEnd < 350 && e.target.tagName !== "INPUT") e.preventDefault(); lastTouchEnd = n; }, { passive: false });
 </script>
 <script src="https://cdn.jsdelivr.net/npm/mqtt@4.3.7/dist/mqtt.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
